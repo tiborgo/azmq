@@ -36,8 +36,8 @@ endif()
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/config")
 
 find_package(Boost 1.54 COMPONENTS system log date_time thread chrono regex random REQUIRED)
-find_package(ZeroMQ 4.0 REQUIRED)
 find_package(Asio REQUIRED)
+find_package(ZeroMQ 4.0 REQUIRED)
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
@@ -47,6 +47,7 @@ if (NOT CMAKE_THREAD_LIBS_INIT)
 endif()
 
 include_directories(${Boost_INCLUDE_DIRS}
+					${Asio_INCLUDE_DIRS}
                     ${ZeroMQ_INCLUDE_DIRS}
                     ${PROJECT_SOURCE_DIR})
 
