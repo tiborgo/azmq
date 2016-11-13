@@ -370,7 +370,7 @@ TEST_CASE( "Send/Receive message more async", "[socket]" ) {
 
 struct monitor_handler {
 
-#if defined BOOST_MSVC
+#if defined _MSC_VER
 #pragma pack(push, 1)
     struct event_t
     {

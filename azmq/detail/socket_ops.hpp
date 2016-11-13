@@ -18,7 +18,7 @@
 #include <regex>
 #include <asio/io_service.hpp>
 #include <asio/socket_base.hpp>
-#if ! defined BOOST_ASIO_WINDOWS
+#if ! defined ASIO_WINDOWS
     #include <asio/posix/stream_descriptor.hpp>
 #else
     #include <asio/ip/tcp.hpp>
@@ -57,7 +57,7 @@ namespace detail {
         using raw_socket_type = void*;
         using socket_type = std::unique_ptr<void, socket_close>;
 
-#if ! defined BOOST_ASIO_WINDOWS
+#if ! defined ASIO_WINDOWS
         using posix_sd_type = asio::posix::stream_descriptor;
         using native_handle_type = asio::posix::stream_descriptor::native_handle_type;
         struct stream_descriptor_close {
@@ -97,7 +97,7 @@ namespace detail {
             if (rc < 0)
                 ec = make_error_code();
             else {
-#if ! defined BOOST_ASIO_WINDOWS
+#if ! defined ASIO_WINDOWS
                 res.reset(new asio::posix::stream_descriptor(io_service, handle));
 #else
                 // Use duplicated SOCKET, because ASIO socket takes ownership over it so destroys one in dtor.
