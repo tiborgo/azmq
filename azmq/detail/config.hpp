@@ -9,10 +9,8 @@
 #ifndef AZMQ_DETAIL_CONFIG_HPP_
 #define AZMQ_DETAIL_CONFIG_HPP_
 
-#if defined AZMQ_USE_STANDALONE_ASIO
 // Assume a competent C++11 implementation
-#       define ASIO_STANDALONE 1
-#endif //defined AZMQ_USE_STANDALONE_ASIO
+#define ASIO_STANDALONE 1
 
 #define AZMQ_V1_INLINE_NAMESPACE_BEGIN inline namespace v1 {
 #define AZMQ_V1_INLINE_NAMESPACE_END }
