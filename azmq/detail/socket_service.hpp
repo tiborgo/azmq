@@ -24,7 +24,7 @@
 #include "send_op.hpp"
 #include "receive_op.hpp"
 
-#include <boost/assert.hpp>
+#include <cassert>
 #include <boost/optional.hpp>
 #include <boost/intrusive/list.hpp>
 #include <asio/system_error.hpp>
@@ -91,7 +91,7 @@ namespace detail {
                          int type,
                          bool optimize_single_threaded,
                          asio::error_code & ec) {
-                BOOST_ASSERT_MSG(!socket_, "socket already open");
+                assert((!socket_)&&("socket already open"));
                 socket_ = socket_ops::create_socket(ctx, type, ec);
                 if (ec) return;
 
@@ -160,7 +160,7 @@ namespace detail {
                 auto kind = socket_ops::get_socket_kind(socket_, ec);
                 if (ec)
                     throw asio::system_error(ec);
-                BOOST_ASSERT_MSG(kind >= 0 && kind <= ZMQ_STREAM, "kind not in [ZMQ_PAIR, ZMQ_STREAM]");
+                assert((kind >= 0 && kind <= ZMQ_STREAM)&&("kind not in [ZMQ_PAIR, ZMQ_STREAM]"));
                 stm << "socket[" << kinds[kind] << "]{ ";
                 if (!endpoint_.empty())
                     stm << (serverish_ ? '@' : '>') << endpoint_ << ' ';
@@ -218,7 +218,7 @@ namespace detail {
                                           int type,
                                           bool optimize_single_threaded,
                                           asio::error_code & ec) {
-            BOOST_ASSERT_MSG(impl, "impl");
+            assert((impl)&&("impl"));
             impl->do_open(get_io_service(), ctx_, type, optimize_single_threaded, ec);
             if (ec)
                 impl.reset();
@@ -230,14 +230,14 @@ namespace detail {
         }
 
         native_handle_type native_handle(implementation_type & impl) {
-            BOOST_ASSERT_MSG(impl, "impl");
+            assert((impl)&&("impl"));
             unique_lock l{ *impl };
             return impl->socket_.get();
         }
 
         template<typename Extension>
         bool associate_ext(implementation_type & impl, Extension&& ext) {
-            BOOST_ASSERT_MSG(impl, "impl");
+            assert((impl)&&("impl"));
             unique_lock l{ *impl };
             exts_type::iterator it;
             bool res;
@@ -250,7 +250,7 @@ namespace detail {
 
         template<typename Extension>
         bool remove_ext(implementation_type & impl) {
-            BOOST_ASSERT_MSG(impl, "impl");
+            assert((impl)&&("impl"));
             unique_lock l{ *impl };
             auto it = impl->exts_.find(std::type_index(typeid(Extension)));
             if (it != std::end(impl->exts_)) {
@@ -459,7 +459,7 @@ namespace detail {
             reactor_op_ptr p{ new T(std::forward<Args>(args)...) };
             asio::error_code ec = enqueue(impl, o, p);
             if (ec) {
-                BOOST_ASSERT_MSG(p, "op ptr");
+                assert((p)&&("op ptr"));
                 p->ec_ = ec;
                 reactor_op::do_complete(p.release());
             }

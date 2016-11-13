@@ -12,7 +12,7 @@
 #include "error.hpp"
 #include "util/scope_guard.hpp"
 
-#include <boost/assert.hpp>
+#include <cassert>
 #include <asio/buffer.hpp>
 #include <asio/buffers_iterator.hpp>
 #include <asio/system_error.hpp>
@@ -51,7 +51,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
 
         message() BOOST_NOEXCEPT {
             auto rc = zmq_msg_init(&msg_);
-            BOOST_ASSERT_MSG(rc == 0, "zmq_msg_init return non-zero"); (void)rc;
+            assert((rc == 0)&&("zmq_msg_init return non-zero")); (void)rc;
         }
 
         explicit message(size_t size) {
@@ -97,7 +97,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
 
             const auto call_deleter = [](void *buf, void *hint) {
                 std::unique_ptr<D> deleter(reinterpret_cast<D*>(hint));
-                BOOST_ASSERT_MSG(deleter, "!deleter");
+                assert((deleter)&&("!deleter"));
                 (*deleter)(buf);
             };
 
@@ -113,7 +113,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
 
         message(nocopy_t, asio::mutable_buffer const& buffer, free_fn* deleter)
         {
-            BOOST_ASSERT_MSG(deleter, "!deleter");
+            assert((deleter)&&("!deleter"));
 
             const auto call_deleter = [](void *buf, void *hint) {
                 free_fn *deleter(reinterpret_cast<free_fn*>(hint));
@@ -136,20 +136,20 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
             : msg_(rhs.msg_)
         {
             auto rc = zmq_msg_init(&rhs.msg_);
-            BOOST_ASSERT_MSG(rc == 0, "zmq_msg_init return non-zero"); (void)rc;
+            assert((rc == 0)&&("zmq_msg_init return non-zero")); (void)rc;
         }
 
         message& operator=(message && rhs) BOOST_NOEXCEPT {
             msg_ = rhs.msg_;
             auto rc = zmq_msg_init(&rhs.msg_);
-            BOOST_ASSERT_MSG(rc == 0, "zmq_msg_init return non-zero"); (void)rc;
+            assert((rc == 0)&&("zmq_msg_init return non-zero")); (void)rc;
 
             return *this;
         }
 
         message(message const& rhs) {
             auto rc = zmq_msg_init(const_cast<zmq_msg_t*>(&msg_));
-            BOOST_ASSERT_MSG(rc == 0, "zmq_msg_init return non-zero");
+            assert((rc == 0)&&("zmq_msg_init return non-zero"));
             rc = zmq_msg_copy(const_cast<zmq_msg_t*>(&msg_),
                               const_cast<zmq_msg_t*>(&rhs.msg_));
             if (rc)
@@ -227,7 +227,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
 
         void close() BOOST_NOEXCEPT {
             auto rc = zmq_msg_close(&msg_);
-            BOOST_ASSERT_MSG(rc == 0, "zmq_msg_close return non-zero"); (void)rc;
+            assert((rc == 0)&&("zmq_msg_close return non-zero")); (void)rc;
         }
 
         // note, this is a bit fragile, currently the last two bytes in a
@@ -265,10 +265,10 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
             auto sz = size();
             zmq_msg_t tmp;
             auto rc = zmq_msg_init(&tmp);
-            BOOST_ASSERT_MSG(rc == 0, "zmq_msg_init return non-zero");
+            assert((rc == 0)&&("zmq_msg_init return non-zero"));
 
             rc = zmq_msg_move(&tmp, &msg_);
-            BOOST_ASSERT_MSG(rc == 0, "zmq_msg_move return non-zero");
+            assert((rc == 0)&&("zmq_msg_move return non-zero"));
 
             // ensure that tmp is always cleaned up
             SCOPE_EXIT { zmq_msg_close(&tmp); };
