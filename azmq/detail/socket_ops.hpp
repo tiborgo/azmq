@@ -24,8 +24,7 @@
     #include <asio/ip/tcp.hpp>
 #endif
 #include <system_error>
-#include <boost/random/mersenne_twister.hpp>
-#include <boost/random/uniform_int_distribution.hpp>
+#include <random>
 #include <boost/range/metafunctions.hpp>
 
 #include <zmq.h>
@@ -145,8 +144,8 @@ namespace detail {
                                              : (uint16_t)std::stoi(last_str);
                 uint16_t port = first;
                 if (opcode[0] == '!') {
-                    static boost::random::mt19937 gen;
-                    boost::random::uniform_int_distribution<> port_range(port, last);
+                    static std::mt19937 gen;
+                    std::uniform_int_distribution<> port_range(port, last);
                     port = port_range(gen);
                 }
                 auto attempts = last - first;
