@@ -13,7 +13,6 @@
 #include "util/scope_guard.hpp"
 
 #include <boost/assert.hpp>
-#include <boost/utility/string_ref.hpp>
 #include <asio/buffer.hpp>
 #include <asio/buffers_iterator.hpp>
 #include <asio/system_error.hpp>
@@ -129,7 +128,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
                 throw asio::system_error(make_error_code());
         }
 
-        explicit message(boost::string_ref str)
+        explicit message(const std::string& str)
             : message(asio::buffer(str.data(), str.size()))
         { }
 

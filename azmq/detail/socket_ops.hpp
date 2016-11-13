@@ -17,7 +17,6 @@
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <regex>
-#include <boost/utility/string_ref.hpp>
 #include <asio/io_service.hpp>
 #include <asio/socket_base.hpp>
 #if ! defined BOOST_ASIO_WINDOWS

@@ -9,7 +9,6 @@
 #include <azmq/socket.hpp>
 #include <azmq/util/scope_guard.hpp>
 
-#include <boost/utility/string_ref.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <asio/buffer.hpp>
@@ -73,7 +72,8 @@ TEST_CASE( "Send/Receive single buffer", "[socket]") {
     auto sz2 = sb.receive(asio::buffer(buf));
 
     REQUIRE(sz1 == sz2);
-    REQUIRE(boost::string_ref(msg) == boost::string_ref(buf.data()));
+    REQUIRE(buf.size() >= 5);
+    REQUIRE(std::memcmp(msg, buf.data(), 5) == 0);
 }
 
 TEST_CASE( "Send/Receive synchronous", "[socket]" ) {

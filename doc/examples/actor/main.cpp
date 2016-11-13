@@ -1,6 +1,5 @@
 #include <azmq/actor.hpp>
 
-#include <boost/utility/string_ref.hpp>
 #include <asio/io_service.hpp>
 #include <asio/buffer.hpp>
 #include <asio/signal_set.hpp>
@@ -26,7 +25,8 @@ public:
         frontend_.async_receive(asio::buffer(buf_), [this](asio::error_code const& ec, size_t bytes_transferred) {
             if (ec)
                 return;
-            if (boost::string_ref(buf_.data(), bytes_transferred - 1) == "PONG")
+            std::string pong("PONG");
+            if (bytes_transferred - 1 == pong.size() && std::memcmp(buf_.data(), pong.data(), pong.size()) == 0)
                 pimpl_->pongs_++;
         });
     }
@@ -60,7 +60,8 @@ private:
                     return; // exit on error
 
                 if (auto p = pimpl.lock()) {
-                    if (boost::string_ref(p->buf_.data(), bytes_transferred - 1) != "PING")
+                    std::string ping("PING");
+                    if (bytes_transferred - 1 != ping.size() || std::memcmp(p->buf_.data(), ping.data(), ping.size()) != 0)
                         return; // exit if not PING
                     p->pings_++;
                     backend.send(asio::buffer("PONG"));
