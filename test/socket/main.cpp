@@ -9,8 +9,6 @@
 #include <azmq/socket.hpp>
 #include <azmq/util/scope_guard.hpp>
 
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/classification.hpp>
 #include <asio/buffer.hpp>
 
 #include <array>
@@ -484,13 +482,12 @@ TEST_CASE( "Socket Monitor", "[socket]" ) {
 }
 
 TEST_CASE( "Attach Method", "[socket]" ) {
-    using namespace boost::algorithm;
     asio::io_service ios;
     azmq::dealer_socket s(ios);
 
     std::vector<std::string> elems;
-
-    azmq::attach(s, split(elems, "@inproc://myendpoint,tcp://127.0.0.1:5556,inproc://others", is_any_of(",")), true);
+    
+    azmq::attach(s, std::vector<std::string>({"@inproc://myendpoint", "tcp://127.0.0.1:5556", "inproc://others"}), true);
     REQUIRE(s.endpoint() == "inproc://others");
 }
 
