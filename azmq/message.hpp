@@ -16,7 +16,6 @@
 #include <asio/buffer.hpp>
 #include <asio/buffers_iterator.hpp>
 #include <asio/system_error.hpp>
-#include <boost/iterator/iterator_facade.hpp>
 
 #include <zmq.h>
 
@@ -274,35 +273,6 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
             auto pdst = zmq_msg_data(const_cast<zmq_msg_t*>(&msg_));
             auto psrc = zmq_msg_data(&tmp);
             ::memcpy(pdst, psrc, sz);
-        }
-    };
-
-    template<typename IteratorType>
-    struct const_message_iterator
-        : boost::iterator_facade<
-                    const_message_iterator<IteratorType>
-                , message const
-                , boost::forward_traversal_tag
-            >
-    {
-        const_message_iterator(IteratorType const& it)
-            : it_(it)
-        { }
-
-    private:
-        friend class boost::iterator_core_access;
-
-        IteratorType it_;
-        mutable message msg_;
-
-        void increment() { it_++; }
-        bool equal(const_message_iterator const& other) const {
-            return it_ == other.it_;
-        }
-
-        message& dereference() const {
-            msg_ = message(*it_);
-            return msg_;
         }
     };
 
