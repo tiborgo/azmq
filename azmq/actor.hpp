@@ -30,7 +30,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
      *           number of additional args
      *  \returns peer socket
      *
-     *  \remark The newly created actor will run in a boost::thread, and will
+     *  \remark The newly created actor will run in an std::thread, and will
      *  receive the 'server' end of the pipe as it's first argument.  The actor
      *  will be attached to the lifetime of the returned socket and will run
      *  until it is destroyed.

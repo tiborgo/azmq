@@ -20,7 +20,7 @@
 #   include <boost/thread/unique_lock.hpp>
     namespace azmq { namespace detail {
         template<typename T>
-        using unique_lock_t = boost::unique_lock<T>;
+        using unique_lock_t = std::unique_lock<T>;
     } }
 #   endif // !defined(AZMQ_DISABLE_STD_UNIQUE_LOCK)
 #endif // !defined(AZMQ_HAS_STD_UNIQUE_LOCK)

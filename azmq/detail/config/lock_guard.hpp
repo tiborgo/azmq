@@ -20,7 +20,7 @@
 #   include <boost/thread/lock_guard.hpp>
     namespace azmq { namespace detail {
         template<typename T>
-        using lock_guard_t = boost::lock_guard<T>;
+        using lock_guard_t = std::lock_guard<T>;
     } }
 #   endif // !defined(AZMQ_DISABLE_STD_LOCK_GUARD)
 #endif // !defined(AZMQ_HAS_STD_LOCK_GUARD)

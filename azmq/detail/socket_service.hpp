@@ -29,8 +29,7 @@
 #include <boost/intrusive/list.hpp>
 #include <asio/system_error.hpp>
 #include <boost/container/flat_map.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/lock_guard.hpp>
+#include <mutex>
 
 #include <memory>
 #include <typeindex>
@@ -76,7 +75,7 @@ namespace detail {
             bool optimize_single_threaded_ = false;
             socket_type socket_;
             stream_descriptor sd_;
-            mutable boost::mutex mutex_;
+            mutable std::mutex mutex_;
             bool in_speculative_completion_ = false;
             bool scheduled_ = false;
             bool missed_events_found_ = false;
@@ -183,7 +182,7 @@ namespace detail {
                 mutex_.unlock();
             }
         };
-        using unique_lock = boost::unique_lock<per_descriptor_data>;
+        using unique_lock = std::unique_lock<per_descriptor_data>;
         using implementation_type = std::shared_ptr<per_descriptor_data>;
 
         using core_access = azmq::detail::core_access<socket_service>;
@@ -568,8 +567,8 @@ namespace detail {
             }
 
         private:
-            mutable boost::mutex mutex_;
-            using lock_type = boost::unique_lock<boost::mutex>;
+            mutable std::mutex mutex_;
+            using lock_type = std::unique_lock<std::mutex>;
             using key_type = socket_ops::native_handle_type;
             boost::container::flat_map<key_type, weak_descriptor_ptr> map_;
         };

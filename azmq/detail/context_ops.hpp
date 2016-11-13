@@ -14,8 +14,7 @@
 
 #include <boost/assert.hpp>
 #include <system_error>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/lock_guard.hpp>
+#include <mutex>
 
 #include <zmq.h>
 
@@ -25,7 +24,7 @@ namespace azmq {
 namespace detail {
     struct context_ops {
         using context_type = std::shared_ptr<void>;
-        using lock_type = boost::lock_guard<boost::mutex>;
+        using lock_type = std::lock_guard<std::mutex>;
 
         using io_threads = opt::integer<ZMQ_IO_THREADS>;
         using max_sockets = opt::integer<ZMQ_MAXMSGSIZE>;
