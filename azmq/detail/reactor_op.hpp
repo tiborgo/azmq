@@ -41,7 +41,7 @@ protected:
     complete_func_type complete_func_;
 
     bool try_again() const {
-        return ec_ == std::errc::resource_unavailable_try_again;
+        return ec_.value() == (int)std::errc::resource_unavailable_try_again;
     }
 
     bool is_canceled() const { return ec_ == canceled(); }
