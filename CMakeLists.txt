@@ -35,7 +35,7 @@ endif()
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/config")
 
-find_package(Boost 1.54 COMPONENTS system log date_time chrono REQUIRED)
+find_package(Boost 1.54 REQUIRED)
 find_package(Asio REQUIRED)
 find_package(ZeroMQ 4.0 REQUIRED)
 

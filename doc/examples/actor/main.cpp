@@ -3,15 +3,12 @@
 #include <asio/io_service.hpp>
 #include <asio/buffer.hpp>
 #include <asio/signal_set.hpp>
-#include <asio/deadline_timer.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <asio/system_timer.hpp>
 
 #include <memory>
 #include <array>
 #include <atomic>
 #include <iostream>
-
-namespace pt = boost::posix_time;
 
 class server_t {
 public:
@@ -85,10 +82,10 @@ private:
 
 
 // ping every 250ms
-void schedule_ping(asio::deadline_timer & timer, server_t & server) {
+void schedule_ping(asio::system_timer & timer, server_t & server) {
     server.ping();
 
-    timer.expires_from_now(pt::milliseconds(250));
+    timer.expires_from_now(std::chrono::milliseconds(250));
     timer.async_wait([&](asio::error_code const& ec) {
         if (ec)
             return;
@@ -110,11 +107,11 @@ int main(int argc, char** argv) {
 
     server_t server(ios);
 
-    asio::deadline_timer timer(ios);
+    asio::system_timer timer(ios);
     schedule_ping(timer, server);
 
     // run for 5 secods
-    asio::deadline_timer deadline(ios, pt::seconds(5));
+    asio::system_timer deadline(ios, std::chrono::seconds(5));
     deadline.async_wait([&](asio::error_code const&) {
         ios.stop();
     });
