@@ -57,10 +57,10 @@ TEST_CASE( "Send/Receive single buffer", "[socket]") {
     asio::io_service ios;
 
     azmq::socket sb(ios, ZMQ_PAIR);
-    sb.bind(subj(BOOST_CURRENT_FUNCTION));
+    sb.bind(subj(__func__));
 
     azmq::socket sc(ios, ZMQ_PAIR);
-    sc.connect(subj(BOOST_CURRENT_FUNCTION));
+    sc.connect(subj(__func__));
 
     auto msg = "TEST";
     auto snd_buf = asio::const_buffer(msg, 5);
@@ -78,10 +78,10 @@ TEST_CASE( "Send/Receive synchronous", "[socket]" ) {
     asio::io_service ios;
 
     azmq::socket sb(ios, ZMQ_ROUTER);
-    sb.bind(subj(BOOST_CURRENT_FUNCTION));
+    sb.bind(subj(__func__));
 
     azmq::socket sc(ios, ZMQ_DEALER);
-    sc.connect(subj(BOOST_CURRENT_FUNCTION));
+    sc.connect(subj(__func__));
 
     sc.send(snd_bufs);
 
@@ -118,10 +118,10 @@ TEST_CASE( "Send/Receive async", "[socket_ops]" ) {
     asio::io_service ios_c;
 
     azmq::socket sb(ios_b, ZMQ_ROUTER);
-    sb.bind(subj(BOOST_CURRENT_FUNCTION));
+    sb.bind(subj(__func__));
 
     azmq::socket sc(ios_c, ZMQ_DEALER);
-    sc.connect(subj(BOOST_CURRENT_FUNCTION));
+    sc.connect(subj(__func__));
 
     asio::error_code ecc;
     size_t btc = 0;
@@ -164,11 +164,11 @@ TEST_CASE( "Send/Receive async is_speculative", "[socket_ops]" ) {
 
     azmq::socket sb(ios_b, ZMQ_ROUTER);
     sb.set_option(azmq::socket::allow_speculative(true));
-    sb.bind(subj(BOOST_CURRENT_FUNCTION));
+    sb.bind(subj(__func__));
 
     azmq::socket sc(ios_c, ZMQ_DEALER);
     sc.set_option(azmq::socket::allow_speculative(true));
-    sc.connect(subj(BOOST_CURRENT_FUNCTION));
+    sc.connect(subj(__func__));
 
     asio::error_code ecc;
     size_t btc = 0;
@@ -208,11 +208,11 @@ TEST_CASE( "Send/Receive async is_speculative", "[socket_ops]" ) {
 TEST_CASE( "Send/Receive async threads", "[socket]" ) {
     asio::io_service ios_b;
     azmq::socket sb(ios_b, ZMQ_ROUTER);
-    sb.bind(subj(BOOST_CURRENT_FUNCTION));
+    sb.bind(subj(__func__));
 
     asio::io_service ios_c;
     azmq::socket sc(ios_c, ZMQ_DEALER);
-    sc.connect(subj(BOOST_CURRENT_FUNCTION));
+    sc.connect(subj(__func__));
 
     asio::error_code ecc;
     size_t btc = 0;
@@ -259,10 +259,10 @@ TEST_CASE( "Send/Receive message async", "[socket]" ) {
     asio::io_service ios_c;
 
     azmq::socket sb(ios_b, ZMQ_ROUTER);
-    sb.bind(subj(BOOST_CURRENT_FUNCTION));
+    sb.bind(subj(__func__));
 
     azmq::socket sc(ios_c, ZMQ_DEALER);
-    sc.connect(subj(BOOST_CURRENT_FUNCTION));
+    sc.connect(subj(__func__));
 
     asio::error_code ecc;
     size_t btc = 0;
@@ -315,10 +315,10 @@ TEST_CASE( "Send/Receive message more async", "[socket]" ) {
     asio::io_service ios_c;
 
     azmq::socket sb(ios_b, ZMQ_ROUTER);
-    sb.bind(subj(BOOST_CURRENT_FUNCTION));
+    sb.bind(subj(__func__));
 
     azmq::socket sc(ios_c, ZMQ_DEALER);
-    sc.connect(subj(BOOST_CURRENT_FUNCTION));
+    sc.connect(subj(__func__));
 
     asio::error_code ecc;
     size_t btc = 0;

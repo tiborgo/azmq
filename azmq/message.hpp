@@ -37,19 +37,14 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
 
     struct nocopy_t {};
 
-#ifdef BOOST_NO_CXX11_CONSTEXPR
-    const nocopy_t nocopy = nocopy_t{};
-#else
     constexpr nocopy_t nocopy = nocopy_t{};
-#endif
-
 
     struct message {
         typedef void (free_fn) (void *data);
 
         using flags_type = int;
 
-        message() BOOST_NOEXCEPT {
+        message() noexcept {
             auto rc = zmq_msg_init(&msg_);
             assert((rc == 0)&&("zmq_msg_init return non-zero")); (void)rc;
         }
@@ -132,14 +127,14 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
             : message(asio::buffer(str.data(), str.size()))
         { }
 
-        message(message && rhs) BOOST_NOEXCEPT
+        message(message && rhs) noexcept
             : msg_(rhs.msg_)
         {
             auto rc = zmq_msg_init(&rhs.msg_);
             assert((rc == 0)&&("zmq_msg_init return non-zero")); (void)rc;
         }
 
-        message& operator=(message && rhs) BOOST_NOEXCEPT {
+        message& operator=(message && rhs) noexcept {
             msg_ = rhs.msg_;
             auto rc = zmq_msg_init(&rhs.msg_);
             assert((rc == 0)&&("zmq_msg_init return non-zero")); (void)rc;
@@ -166,15 +161,15 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
 
         ~message() { close(); }
 
-        asio::const_buffer cbuffer() const BOOST_NOEXCEPT {
+        asio::const_buffer cbuffer() const noexcept {
             return asio::buffer(data(), size());
         }
 
-        operator asio::const_buffer() const BOOST_NOEXCEPT {
+        operator asio::const_buffer() const noexcept {
             return cbuffer();
         }
 
-        asio::const_buffer buffer() const BOOST_NOEXCEPT {
+        asio::const_buffer buffer() const noexcept {
             return cbuffer();
         }
 
@@ -194,11 +189,11 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
             return asio::buffer_copy(target, buffer());
         }
 
-        bool operator==(const message & rhs) const BOOST_NOEXCEPT {
+        bool operator==(const message & rhs) const noexcept {
             return !operator!=(rhs);
         }
 
-        bool operator!=(const message & rhs) const BOOST_NOEXCEPT {
+        bool operator!=(const message & rhs) const noexcept {
             const auto sz = size();
 
             return sz != rhs.size()
@@ -209,15 +204,15 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
             return std::string(static_cast<const char *>(data()), size());
         }
 
-        const void *data() const BOOST_NOEXCEPT {
+        const void *data() const noexcept {
             return zmq_msg_data(const_cast<zmq_msg_t*>(&msg_));
         }
 
-        size_t size() const BOOST_NOEXCEPT {
+        size_t size() const noexcept {
             return zmq_msg_size(const_cast<zmq_msg_t*>(&msg_));
         }
 
-        bool more() const BOOST_NOEXCEPT {
+        bool more() const noexcept {
             return zmq_msg_more(const_cast<zmq_msg_t*>(&msg_)) ? true : false;
         }
 
@@ -225,7 +220,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
         friend detail::socket_ops;
         zmq_msg_t msg_;
 
-        void close() BOOST_NOEXCEPT {
+        void close() noexcept {
             auto rc = zmq_msg_close(&msg_);
             assert((rc == 0)&&("zmq_msg_close return non-zero")); (void)rc;
         }
@@ -237,13 +232,13 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
             type_offset = sizeof(zmq_msg_t) - 2
         };
 
-        uint8_t flags() const BOOST_NOEXCEPT {
+        uint8_t flags() const noexcept {
             auto pm = const_cast<zmq_msg_t*>(&msg_);
             auto p = reinterpret_cast<uint8_t*>(pm);
             return p[flags_offset];
         }
 
-        uint8_t type() const BOOST_NOEXCEPT {
+        uint8_t type() const noexcept {
             auto pm = const_cast<zmq_msg_t*>(&msg_);
             auto p = reinterpret_cast<uint8_t*>(pm);
             return p[type_offset];
@@ -256,7 +251,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
             type_cmsg = 104
         };
 
-        bool is_shared() const BOOST_NOEXCEPT {
+        bool is_shared() const noexcept {
             // TODO use shared message property if libzmq version >= 4.1
             return (flags() & flag_shared) || type() == type_cmsg;
         }
