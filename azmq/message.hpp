@@ -17,7 +17,6 @@
 #include <asio/buffers_iterator.hpp>
 #include <asio/system_error.hpp>
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/range/iterator_range.hpp>
 
 #include <zmq.h>
 
@@ -306,26 +305,6 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
             return msg_;
         }
     };
-
-    template<typename BufferSequence>
-    struct deduced_const_message_range {
-        using iterator_type = const_message_iterator<typename BufferSequence::const_iterator>;
-        using range_type = boost::iterator_range<iterator_type>;
-
-        static range_type get_range(BufferSequence const& buffers) {
-            return range_type(iterator_type(std::begin(buffers)),
-                              iterator_type(std::end(buffers)));
-        }
-    };
-
-    // note, as with asio's expectations, buffers must remain valid for the lifetime of the returned
-    // range
-    template<typename ConstBufferSequence>
-    static auto const_message_range(ConstBufferSequence const& buffers) ->
-        typename deduced_const_message_range<ConstBufferSequence>::range_type
-    {
-        return deduced_const_message_range<ConstBufferSequence>::get_range(buffers);
-    }
 
     using message_vector = std::vector<message>;
 

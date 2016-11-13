@@ -223,11 +223,10 @@ TEST_CASE( "message_sequence", "[message]" ) {
     REQUIRE(res.size() == bufs.size() + 1);
 
     // range of const_buffer -> range of message
-    auto range = azmq::const_message_range(bufs);
     REQUIRE(std::distance(std::begin(bufs), std::end(bufs)) ==
-            std::distance(std::begin(range), std::end(range)));
+            std::distance(std::begin(bufs), std::end(bufs)));
 
-    auto it = std::begin(range);
+    auto it = std::begin(bufs);
     for(auto& buf : bufs) {
         REQUIRE(azmq::message(buf) == *it++);
     }

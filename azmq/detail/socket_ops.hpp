@@ -24,7 +24,6 @@
 #endif
 #include <system_error>
 #include <random>
-#include <boost/range/metafunctions.hpp>
 
 #include <zmq.h>
 
@@ -36,6 +35,21 @@
 
 namespace azmq {
 namespace detail {
+    template <typename T>
+    class has_begin {
+    private:
+        typedef char Yes;
+        typedef Yes No[2];
+        
+        template<typename C> static auto Test(void*)
+        -> decltype(typename C::const_iterator{std::declval<C const>().begin()}, Yes{});
+        
+        template<typename> static No& Test(...);
+        
+    public:
+        static bool const value = sizeof(Test<T>(0)) == sizeof(Yes);
+    };
+    
     struct socket_ops {
         using endpoint_type = std::string;
 
@@ -267,7 +281,7 @@ namespace detail {
                          socket_type & socket,
                          flags_type flags,
                          asio::error_code & ec) ->
-            typename boost::enable_if<boost::has_range_const_iterator<ConstBufferSequence>, size_t>::type
+            typename std::enable_if<has_begin<ConstBufferSequence>::value, size_t>::type
         {
             size_t res = 0;
             auto last = std::distance(std::begin(buffers), std::end(buffers)) - 1;
@@ -299,7 +313,7 @@ namespace detail {
                             socket_type & socket,
                             flags_type flags,
                             asio::error_code & ec) ->
-            typename boost::enable_if<boost::has_range_const_iterator<MutableBufferSequence>, size_t>::type
+            typename std::enable_if<has_begin<MutableBufferSequence>::value, size_t>::type
         {
             size_t res = 0;
             message msg;
