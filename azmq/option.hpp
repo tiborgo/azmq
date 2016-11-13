@@ -13,7 +13,6 @@
 
 #include <zmq.h>
 #include <asio/buffer.hpp>
-#include <boost/logic/tribool.hpp>
 
 #include <vector>
 #include <string>
