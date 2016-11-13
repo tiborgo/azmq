@@ -14,10 +14,6 @@ if (${CMAKE_CXX_PLATFORM_ID} STREQUAL "Windows")
     add_definitions(-D_WIN32_WINNT=0x0600)
 
     add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-
-    if (NOT DEFINED Boost_USE_STATIC_LIBS)
-        set(Boost_USE_STATIC_LIBS ON) # On Windows, Boost is compiled as static libraries by default
-    endif()
 endif()
 
 if (ZMQ_STATIC)
@@ -35,7 +31,6 @@ endif()
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/config")
 
-find_package(Boost 1.54 REQUIRED)
 find_package(Asio REQUIRED)
 find_package(ZeroMQ 4.0 REQUIRED)
 
@@ -46,8 +41,7 @@ if (NOT CMAKE_THREAD_LIBS_INIT)
     set(CMAKE_THREAD_LIBS_INIT "")
 endif()
 
-include_directories(${Boost_INCLUDE_DIRS}
-					${Asio_INCLUDE_DIRS}
+include_directories(${Asio_INCLUDE_DIRS}
                     ${ZeroMQ_INCLUDE_DIRS}
                     ${PROJECT_SOURCE_DIR})
 
