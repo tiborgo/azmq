@@ -8,7 +8,7 @@
 */
 #include <azmq/message.hpp>
 
-#include <boost/asio/buffer.hpp>
+#include <asio/buffer.hpp>
 
 #include <string>
 #include <algorithm>
@@ -30,7 +30,7 @@ TEST_CASE( "message_constructors", "[message]" ) {
 
     // implicit construction from asio::const_buffer
     std::string s("This is a test");
-    azmq::message mstr(boost::asio::buffer(s));
+    azmq::message mstr(asio::buffer(s));
     REQUIRE(s.size() == mstr.size());
     REQUIRE(s ==  mstr.string());
 
@@ -62,12 +62,12 @@ TEST_CASE( "deleter", "[message]" ) {
     global_ctr = 0;
 
     {
-        azmq::message m1(azmq::nocopy, boost::asio::buffer("static const buf"));
+        azmq::message m1(azmq::nocopy, asio::buffer("static const buf"));
         REQUIRE(17 == m1.size());
     }
 
     {
-        azmq::message m2(azmq::nocopy, boost::asio::buffer(global_buf), [](void *buf){
+        azmq::message m2(azmq::nocopy, asio::buffer(global_buf), [](void *buf){
             REQUIRE(buf == &global_buf);
             ++global_ctr;
         });
@@ -76,7 +76,7 @@ TEST_CASE( "deleter", "[message]" ) {
     REQUIRE(1 == global_ctr);
 
     {
-        azmq::message m3(azmq::nocopy, boost::asio::buffer(global_buf), &global_hint, [](void *buf, void *hint){
+        azmq::message m3(azmq::nocopy, asio::buffer(global_buf), &global_hint, [](void *buf, void *hint){
             REQUIRE(buf == global_buf);
             REQUIRE(hint == &global_hint);
             ++global_ctr;
@@ -88,7 +88,7 @@ TEST_CASE( "deleter", "[message]" ) {
     {
         char buf2[16];
         int x = 42;
-        azmq::message m4(azmq::nocopy, boost::asio::buffer(buf2), [x, &buf2](void *buf){
+        azmq::message m4(azmq::nocopy, asio::buffer(buf2), [x, &buf2](void *buf){
             REQUIRE(buf == buf2);
             REQUIRE(x == 42);
             ++global_ctr;
@@ -98,13 +98,13 @@ TEST_CASE( "deleter", "[message]" ) {
     REQUIRE(3 == global_ctr);
 
     {
-        azmq::message m5(azmq::nocopy, boost::asio::buffer(global_buf), &global_hint, free_fn2);
+        azmq::message m5(azmq::nocopy, asio::buffer(global_buf), &global_hint, free_fn2);
         REQUIRE(sizeof(global_buf) == m5.size());
     }
     REQUIRE(4 == global_ctr);
 
     {
-        azmq::message m6(azmq::nocopy, boost::asio::buffer(global_buf), &free_fn1);
+        azmq::message m6(azmq::nocopy, asio::buffer(global_buf), &free_fn1);
         REQUIRE(sizeof(global_buf) == m6.size());
     }
     REQUIRE(5 == global_ctr);
@@ -113,7 +113,7 @@ TEST_CASE( "deleter", "[message]" ) {
     {
         azmq::message m7;
         {
-            azmq::message m8(azmq::nocopy, boost::asio::buffer(global_buf), free_fn1);
+            azmq::message m8(azmq::nocopy, asio::buffer(global_buf), free_fn1);
             REQUIRE(sizeof(global_buf) == m8.size());
             m7 = m8;
             REQUIRE(sizeof(global_buf) == m7.size());
@@ -127,12 +127,12 @@ TEST_CASE( "deleter", "[message]" ) {
 TEST_CASE( "message_buffer_operations", "[message]" ) {
     azmq::message mm(42);
     // implicit cast to const_buffer
-    boost::asio::const_buffer b = mm.cbuffer();
-    REQUIRE(boost::asio::buffer_size(b) == mm.size());
+    asio::const_buffer b = mm.cbuffer();
+    REQUIRE(asio::buffer_size(b) == mm.size());
 
     // implicit cast to mutable_buffer
-    boost::asio::mutable_buffer bb = mm.buffer();
-    REQUIRE(boost::asio::buffer_size(bb) == mm.size());
+    asio::mutable_buffer bb = mm.buffer();
+    REQUIRE(asio::buffer_size(bb) == mm.size());
 }
 
 TEST_CASE( "message_copy_operations", "[message]" ) {
@@ -165,8 +165,8 @@ TEST_CASE( "write_through_mutable_buffer", "[message]" ) {
     azmq::message m("This is a test");
 
     azmq::message mm(m);
-    boost::asio::mutable_buffer bb = mm.buffer();
-    auto pstr = boost::asio::buffer_cast<char*>(bb);
+    asio::mutable_buffer bb = mm.buffer();
+    auto pstr = asio::buffer_cast<char*>(bb);
     pstr[0] = 't';
 
     auto s = mm.string();
@@ -177,7 +177,7 @@ TEST_CASE( "write_through_mutable_buffer", "[message]" ) {
 }
 
 TEST_CASE( "comparison", "[message]" ) {
-    using boost::asio::buffer;
+    using asio::buffer;
 
     REQUIRE(azmq::message(buffer("bla-bla", 7)) == azmq::message(buffer("bla-bla", 7)));
     REQUIRE_FALSE(azmq::message(buffer("bla-bla", 7)) != azmq::message(buffer("bla-bla", 7)));
@@ -207,9 +207,9 @@ TEST_CASE( "message_sequence", "[message]" ) {
     std::string foo("foo");
     std::string bar("bar");
 
-    std::array<boost::asio::const_buffer, 2> bufs {{
-        boost::asio::buffer(foo),
-        boost::asio::buffer(bar)
+    std::array<asio::const_buffer, 2> bufs {{
+        asio::buffer(foo),
+        asio::buffer(bar)
     }};
 
     // make a message_vector from a range
@@ -219,7 +219,7 @@ TEST_CASE( "message_sequence", "[message]" ) {
     REQUIRE(bar == res[1].string());
 
     // implicit conversion
-    res.push_back(boost::asio::buffer("BAZ"));
+    res.push_back(asio::buffer("BAZ"));
     REQUIRE(res.size() == bufs.size() + 1);
 
     // range of const_buffer -> range of message

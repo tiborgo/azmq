@@ -14,7 +14,7 @@
 #include "socket_ops.hpp"
 #include "reactor_op.hpp"
 
-#include <boost/asio/io_service.hpp>
+#include <asio/io_service.hpp>
 
 #include <zmq.h>
 
@@ -35,7 +35,7 @@ public:
 
     static bool do_perform(reactor_op* base, socket_type & socket) {
         auto o = static_cast<receive_buffer_op_base*>(base);
-        o->ec_ = boost::system::error_code();
+        o->ec_ = asio::error_code();
 
         o->bytes_transferred_ += socket_ops::receive(o->buffers_, socket, o->flags_ | ZMQ_DONTWAIT, o->ec_);
         if (o->ec_)
@@ -45,7 +45,7 @@ public:
 
 protected:
     bool more() const {
-        return ec_ == boost::system::errc::no_buffer_space && bytes_transferred_;
+        return ec_ == std::errc::no_buffer_space && bytes_transferred_;
     }
 
 private:
@@ -66,7 +66,7 @@ public:
         { }
 
     static void do_complete(reactor_op* base,
-                            const boost::system::error_code &,
+                            const asio::error_code &,
                             size_t) {
         auto o = static_cast<receive_buffer_op*>(base);
         auto h = std::move(o->handler_);
@@ -93,7 +93,7 @@ public:
         { }
 
     static void do_complete(reactor_op* base,
-                            const boost::system::error_code &,
+                            const asio::error_code &,
                             size_t) {
         auto o = static_cast<receive_more_buffer_op*>(base);
         auto h = std::move(o->handler_);
@@ -118,7 +118,7 @@ public:
 
     static bool do_perform(reactor_op* base, socket_type & socket) {
         auto o = static_cast<receive_op_base*>(base);
-        o->ec_ = boost::system::error_code();
+        o->ec_ = asio::error_code();
 
         o->bytes_transferred_ = socket_ops::receive(o->msg_, socket, o->flags_ | ZMQ_DONTWAIT, o->ec_);
         if (o->ec_)
@@ -141,7 +141,7 @@ public:
         { }
 
     static void do_complete(reactor_op* base,
-                            const boost::system::error_code &,
+                            const asio::error_code &,
                             size_t) {
         auto o = static_cast<receive_op*>(base);
         auto h = std::move(o->handler_);

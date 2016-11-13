@@ -13,7 +13,7 @@
 #include "socket_ops.hpp"
 #include "reactor_op.hpp"
 
-#include <boost/asio/io_service.hpp>
+#include <asio/io_service.hpp>
 
 #include <zmq.h>
 #include <iterator>
@@ -34,7 +34,7 @@ public:
 
     static bool do_perform(reactor_op* base, socket_type & socket) {
         auto o = static_cast<send_buffer_op_base*>(base);
-        o->ec_ = boost::system::error_code();
+        o->ec_ = asio::error_code();
         o->bytes_transferred_ += socket_ops::send(o->buffers_, socket, o->flags_ | ZMQ_DONTWAIT, o->ec_);
         if (o->ec_) {
             return !o->try_again();
@@ -60,7 +60,7 @@ public:
     { }
 
     static void do_complete(reactor_op* base,
-                            const boost::system::error_code &,
+                            const asio::error_code &,
                             size_t) {
         auto o = static_cast<send_buffer_op*>(base);
         auto h = std::move(o->handler_);
@@ -87,7 +87,7 @@ public:
 
     static bool do_perform(reactor_op* base, socket_type & socket) {
         auto o = static_cast<send_op_base*>(base);
-        o->ec_ = boost::system::error_code();
+        o->ec_ = asio::error_code();
         o->bytes_transferred_ = socket_ops::send(o->msg_, socket, o->flags_ | ZMQ_DONTWAIT, o->ec_);
 
         if (o->ec_)
@@ -111,7 +111,7 @@ public:
     { }
 
     static void do_complete(reactor_op* base,
-                            const boost::system::error_code &,
+                            const asio::error_code &,
                             size_t) {
         auto o = static_cast<send_op*>(base);
         auto h = std::move(o->handler_);

@@ -17,10 +17,10 @@
 #include "detail/send_op.hpp"
 #include "detail/receive_op.hpp"
 
-#include <boost/asio/basic_io_object.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/buffer.hpp>
-#include <boost/system/error_code.hpp>
+#include <asio/basic_io_object.hpp>
+#include <asio/io_service.hpp>
+#include <asio/buffer.hpp>
+#include <system_error>
 
 #include <type_traits>
 
@@ -101,13 +101,13 @@ public:
      *      io_service.run() you may bypass the mutex by passing true for
      *      optimize_single_threaded.
      */
-    explicit socket(boost::asio::io_service& ios,
+    explicit socket(asio::io_service& ios,
                     int type,
                     bool optimize_single_threaded = false)
             : azmq::detail::basic_io_object<detail::socket_service>(ios) {
-        boost::system::error_code ec;
+        asio::error_code ec;
         if (get_service().do_open(implementation, type, optimize_single_threaded, ec))
-            throw boost::system::system_error(ec);
+            throw asio::system_error(ec);
     }
 
     socket(socket&& other)
@@ -148,20 +148,20 @@ public:
      *  endpoint() will return the actual endpoint bound, not the binding spec
      *  supplied here.
      */
-    boost::system::error_code bind(std::string addr,
-                                   boost::system::error_code & ec) {
+    asio::error_code bind(std::string addr,
+                                   asio::error_code & ec) {
         return get_service().bind(implementation, std::move(addr), ec);
     }
 
     /** \brief Accept incoming connections on this socket
      *  \param addr std::string zeromq URI to bind
-     *  \throw boost::system::system_error
+     *  \throw asio::system_error
      *  \see http://api.zeromq.org/4-1:zmq-bind
      */
     void bind(std::string addr) {
-        boost::system::error_code ec;
+        asio::error_code ec;
         if (bind(std::move(addr), ec))
-            throw boost::system::system_error(ec);
+            throw asio::system_error(ec);
     }
 
     /** \brief Stop accepting connection on this socket
@@ -169,20 +169,20 @@ public:
      *  \param ec error_code to capture error
      *  \see http://api.zeromq.org/4-0:zmq-unbind
      */
-    boost::system::error_code unbind(std::string const& addr,
-                                     boost::system::error_code & ec) {
+    asio::error_code unbind(std::string const& addr,
+                                     asio::error_code & ec) {
         return get_service().unbind(implementation, addr, ec);
     }
 
     /** \brief Stop accepting connection on this socket
      *  \param addr std::string const& zeromq URI to unbind
-     *  \throw boost::system::system_error
+     *  \throw asio::system_error
      *  \see http://api.zeromq.org/4-0:zmq-unbind
      */
     void unbind(std::string const& addr) {
-        boost::system::error_code ec;
+        asio::error_code ec;
         if (unbind(addr, ec))
-            throw boost::system::system_error(ec);
+            throw asio::system_error(ec);
     }
 
     /** \brief Create outgoing connection from this socket
@@ -190,20 +190,20 @@ public:
      *  \param ec error_code to capture error
      *  \see http://api.zeromq.org/4-1:zmq-connect
      */
-    boost::system::error_code connect(std::string addr,
-                                      boost::system::error_code & ec) {
+    asio::error_code connect(std::string addr,
+                                      asio::error_code & ec) {
         return get_service().connect(implementation, std::move(addr), ec);
     }
 
     /** \brief Create outgoing connection from this socket
      *  \param addr std::string zeromq URI of endpoint
-     *  \throw boost::system::system_error
+     *  \throw asio::system_error
      *  \see http://api.zeromq.org/4-1:zmq-connect
      */
     void connect(std::string addr) {
-        boost::system::error_code ec;
+        asio::error_code ec;
         if (connect(addr, ec))
-            throw boost::system::system_error(ec);
+            throw asio::system_error(ec);
     }
 
     /** \brief Disconnect this socket
@@ -211,20 +211,20 @@ public:
      *  \param ec error_code to capture error
      *  \see http://api.zeromq.org/4-1:zmq-disconnect
      */
-    boost::system::error_code disconnect(std::string const& addr,
-                                         boost::system::error_code & ec) {
+    asio::error_code disconnect(std::string const& addr,
+                                         asio::error_code & ec) {
         return get_service().disconnect(implementation, addr, ec);
     }
 
     /** \brief Disconnect this socket
      *  \param addr std::string const& zeromq URI of endpoint
-     *  \throw boost::system::system_error
+     *  \throw asio::system_error
      *  \see http://api.zeromq.org/4-1:zmq-disconnect
      */
     void disconnect(std::string const& addr) {
-        boost::system::error_code ec;
+        asio::error_code ec;
         if (disconnect(addr, ec))
-            throw boost::system::system_error(ec);
+            throw asio::system_error(ec);
     }
 
     /** \brief return endpoint addr supplied to bind or connect
@@ -243,21 +243,21 @@ public:
      *  \param opt T option to set
      */
     template<typename Option>
-    boost::system::error_code set_option(Option const& opt,
-                                         boost::system::error_code & ec) {
+    asio::error_code set_option(Option const& opt,
+                                         asio::error_code & ec) {
         return get_service().set_option(implementation, opt, ec);
     }
 
     /** \brief Set an option on a socket
      *  \tparam T type which must conform the asio SettableSocketOption concept
      *  \param opt T option to set
-     *  \throw boost::system::system_error
+     *  \throw asio::system_error
      */
     template<typename Option>
     void set_option(Option const& opt) {
-        boost::system::error_code ec;
+        asio::error_code ec;
         if (set_option(opt, ec))
-            throw boost::system::system_error(ec);
+            throw asio::system_error(ec);
     }
 
     /** \brief Get an option from a socket
@@ -266,21 +266,21 @@ public:
      *  \param ec error_code to capture error
      */
     template<typename Option>
-    boost::system::error_code get_option(Option & opt,
-                                         boost::system::error_code & ec) {
+    asio::error_code get_option(Option & opt,
+                                         asio::error_code & ec) {
         return get_service().get_option(implementation, opt, ec);
     }
 
     /** \brief Get an option from a socket
      *  \tparam T must conform to the asio GettableSocketOption concept
      *  \param opt T option to get
-     *  \throw boost::system::system_error
+     *  \throw asio::system_error
      */
     template<typename Option>
     void get_option(Option & opt) {
-        boost::system::error_code ec;
+        asio::error_code ec;
         if (get_option(opt, ec))
-            throw boost::system::system_error(ec);
+            throw asio::system_error(ec);
     }
 
     /** \brief Receive some data from the socket
@@ -307,7 +307,7 @@ public:
     template<typename MutableBufferSequence>
     std::size_t receive(MutableBufferSequence const& buffers,
                         flags_type flags,
-                        boost::system::error_code & ec) {
+                        asio::error_code & ec) {
         return get_service().receive(implementation, buffers, flags, ec);
     }
 
@@ -315,7 +315,7 @@ public:
      *  \tparam MutableBufferSequence
      *  \param buffers buffer(s) to fill on receive
      *  \param flags flags specifying how the receive call is to be made
-     *  \throw boost::system::system_error
+     *  \throw asio::system_error
      *  \remark
      *  If buffers is a sequence of buffers this call will fill the supplied
      *  sequence with message parts from a multipart message. It is possible
@@ -335,10 +335,10 @@ public:
     template<typename MutableBufferSequence>
     std::size_t receive(const MutableBufferSequence & buffers,
                         flags_type flags = 0) {
-        boost::system::error_code ec;
+        asio::error_code ec;
         auto res = receive(buffers, flags, ec);
         if (ec)
-            throw boost::system::system_error(ec);
+            throw asio::system_error(ec);
         return res;
     }
 
@@ -354,7 +354,7 @@ public:
      */
     std::size_t receive(message & msg,
                         flags_type flags,
-                        boost::system::error_code & ec) {
+                        asio::error_code & ec) {
         return get_service().receive(implementation, msg, flags, ec);
     }
 
@@ -371,10 +371,10 @@ public:
      */
     std::size_t receive(message & msg,
                         flags_type flags = 0) {
-        boost::system::error_code ec;
+        asio::error_code ec;
         auto res = receive(msg, flags, ec);
         if (ec)
-            throw boost::system::system_error(ec);
+            throw asio::system_error(ec);
         return res;
     }
 
@@ -386,7 +386,7 @@ public:
      */
     size_t receive_more(message_vector & vec,
                         flags_type flags,
-                        boost::system::error_code & ec) {
+                        asio::error_code & ec) {
         return get_service().receive_more(implementation, vec, flags, ec);
     }
 
@@ -394,14 +394,14 @@ public:
      *  \param vec messave_vector to fill on receive
      *  \flags specifying how the receive call is to be made
      *  \return size_t bytes transferred
-     *  \throw boost::system::system_error
+     *  \throw asio::system_error
      */
     size_t receive_more(message_vector & vec,
                         flags_type flags) {
-        boost::system::error_code ec;
+        asio::error_code ec;
         auto res = receive_more(vec, flags, ec);
         if (ec)
-            throw boost::system::system_error(ec);
+            throw asio::system_error(ec);
         return res;
     }
 
@@ -417,7 +417,7 @@ public:
     template<typename ConstBufferSequence>
     std::size_t send(ConstBufferSequence const& buffers,
                      flags_type flags,
-                     boost::system::error_code & ec) {
+                     asio::error_code & ec) {
         return get_service().send(implementation, buffers, flags, ec);
     }
 
@@ -425,7 +425,7 @@ public:
      *  \tparam ConstBufferSequence
      *  \param buffers buffer(s) to send
      *  \param flags specifying how the send call is to be made
-     *  \throw boost::system::system_error
+     *  \throw asio::system_error
      *  \remark
      *  If buffers is a sequence of buffers this call will send a multipart
      *  message from the supplied buffer sequence.
@@ -433,10 +433,10 @@ public:
     template<typename ConstBufferSequence>
     std::size_t send(ConstBufferSequence const& buffers,
                      flags_type flags = 0) {
-        boost::system::error_code ec;
+        asio::error_code ec;
         auto res = send(buffers, flags, ec);
         if (ec)
-            throw boost::system::system_error(ec);
+            throw asio::system_error(ec);
         return res;
     }
 
@@ -447,7 +447,7 @@ public:
      */
     std::size_t send(message const& msg,
                      flags_type flags,
-                     boost::system::error_code & ec) {
+                     asio::error_code & ec) {
         return get_service().send(implementation, msg, flags, ec);
     }
 
@@ -458,30 +458,30 @@ public:
      */
     std::size_t send(message const& msg,
                      flags_type flags = 0) {
-        boost::system::error_code ec;
+        asio::error_code ec;
         auto res = get_service().send(implementation, msg, flags, ec);
         if (ec)
-            throw boost::system::error_code(ec);
+            throw asio::error_code(ec);
         return res;
     }
 
     /* \brief Purge remaining message parts from prior receive()
-     * \param ec boost::system::error_code &
+     * \param ec asio::error_code &
      * \return size_t number of bytes discarded
      */
-    std::size_t flush(boost::system::error_code & ec) {
+    std::size_t flush(asio::error_code & ec) {
         return get_service().flush(implementation, ec);
     }
 
     /* \brief Flush remaining message parts from prior receive()
      * \return size_t number of bytes discarded
-     * \throw boost::system::system_error
+     * \throw asio::system_error
      */
     std::size_t flush() {
-        boost::system::error_code ec;
+        asio::error_code ec;
         auto res = flush(ec);
         if (ec)
-            throw boost::system::error_code(ec);
+            throw asio::error_code(ec);
         return res;
     }
 
@@ -519,7 +519,7 @@ public:
      *  \remark
      *  The ReadMoreHandler concept has the following interface
      *      struct ReadMoreHandler {
-     *          void operator()(const boost::system::error_code & ec,
+     *          void operator()(const asio::error_code & ec,
      *                          more_result result);
      *      }
      *  \remark
@@ -547,7 +547,7 @@ public:
      *  \remark
      *  The MessageReadHandler concept has the following interface
      *  struct MessageReadHandler {
-     *      void operator()(const boost::system::error_code & ec,
+     *      void operator()(const asio::error_code & ec,
      *                      message & msg,
      *                      size_t bytes_transferred);
      *  }
@@ -605,35 +605,35 @@ public:
      *  \param what shutdown_type
      *  \param ec set to indicate what, if any, error occurred
      */
-    boost::system::error_code shutdown(shutdown_type what,
-                                       boost::system::error_code & ec) {
+    asio::error_code shutdown(shutdown_type what,
+                                       asio::error_code & ec) {
         return get_service().shutdown(implementation, what, ec);
     }
 
     /** \brief Initiate shutdown of socket
      *  \param what shutdown_type
-     *  \throw boost::system::system_error
+     *  \throw asio::system_error
      */
     void shutdown(shutdown_type what) {
-        boost::system::error_code ec;
+        asio::error_code ec;
         if (shutdown(what, ec))
-            throw boost::system::system_error(ec);
+            throw asio::system_error(ec);
     }
 
     /** \brief Cancel all outstanding asynchronous operations
      *  \param ec set to indicate what, if any, error occurred
      */
-    boost::system::error_code cancel(boost::system::error_code & ec) {
+    asio::error_code cancel(asio::error_code & ec) {
         return get_service().cancel(implementation, ec);
     }
 
     /** \brief Cancel all outstanding asynchronous operations
-     *  \throw boost::system::system_error
+     *  \throw asio::system_error
      */
     void cancel() {
-        boost::system::error_code ec;
+        asio::error_code ec;
         if (get_service().cancel(implementation, ec))
-            throw boost::system::system_error(ec);
+            throw asio::system_error(ec);
     }
 
     /** \brief Allows access to the underlying ZeroMQ socket
@@ -649,9 +649,9 @@ public:
         *  \param ec error_code to set on error
         *  \returns socket
     **/
-    socket monitor(boost::asio::io_service & ios,
+    socket monitor(asio::io_service & ios,
                    int events,
-                   boost::system::error_code & ec) {
+                   asio::error_code & ec) {
         auto uri = get_service().monitor(implementation, events, ec);
         socket res(ios, ZMQ_PAIR);
         if (ec)
@@ -667,12 +667,12 @@ public:
         *  \param events int mask of events to publish to returned socket
         *  \returns socket
     **/
-    socket monitor(boost::asio::io_service & ios,
+    socket monitor(asio::io_service & ios,
                    int events) {
-        boost::system::error_code ec;
+        asio::error_code ec;
         auto res = monitor(ios, events, ec);
         if (ec)
-            throw boost::system::system_error(ec);
+            throw asio::system_error(ec);
         return res;
     }
 
@@ -691,7 +691,7 @@ namespace detail {
         typedef socket Base;
 
     public:
-        specialized_socket(boost::asio::io_service & ios,
+        specialized_socket(asio::io_service & ios,
                            bool optimize_single_threaded = false)
             : Base(ios, Type, optimize_single_threaded)
         {
@@ -730,9 +730,9 @@ using stream_socket = detail::specialized_socket<ZMQ_STREAM>;
  *  \param s socket& to attach to supplied endpoints
  *  \param begin of endpoint sequence
  *  \param end of endpoint sequence
- *  \param ec boost::system::error_code&
+ *  \param ec asio::error_code&
  *  \param serverish bool (defaults to true) - See remarks
- *  \return boost::system::error_code
+ *  \return asio::error_code
  *  \remarks
  *  If each endpoint is prefixed with '@' or '>', then this
  *  routine will bind or connect the socket (respectively) to
@@ -741,8 +741,8 @@ using stream_socket = detail::specialized_socket<ZMQ_STREAM>;
  *  will bound (the default) or connected (serverish == false).
  */
 template<typename Iterator>
-boost::system::error_code attach(socket & s, Iterator begin, Iterator end,
-                                 boost::system::error_code & ec,
+asio::error_code attach(socket & s, Iterator begin, Iterator end,
+                                 asio::error_code & ec,
                                  bool serverish = true) {
     for (auto it = begin; it != end; ++it) {
         if (it->empty()) continue;
@@ -770,7 +770,7 @@ boost::system::error_code attach(socket & s, Iterator begin, Iterator end,
  *  \param begin of endpoint sequence
  *  \param end of endpoint sequence
  *  \param serverish bool (defaults to true) - See remarks
- *  \throw boost::system::system_error
+ *  \throw asio::system_error
  *  \remarks
  *  If each endpoint is prefixed with '@' or '>', then this
  *  routine will bind or connect the socket (respectively) to
@@ -780,9 +780,9 @@ boost::system::error_code attach(socket & s, Iterator begin, Iterator end,
  */
 template<typename Iterator>
 void attach(socket & s, Iterator begin, Iterator end, bool serverish = true) {
-    boost::system::error_code ec;
+    asio::error_code ec;
     if (attach(s, begin, end, ec, serverish))
-        throw boost::system::system_error(ec);
+        throw asio::system_error(ec);
 }
 
 /** \brief attach a socket to a range of endpoints
@@ -790,9 +790,9 @@ void attach(socket & s, Iterator begin, Iterator end, bool serverish = true) {
  *          for a sequence of endpoints
  *  \param s socket& to attach to supplied endpoints
  *  \param r Range of endpoints
- *  \param ec boost::system::error_code&
+ *  \param ec asio::error_code&
  *  \param serverish bool (defaults to true) - See remarks
- *  \return boost::system::error_code
+ *  \return asio::error_code
  *  \remarks
  *  If each endpoint is prefixed with '@' or '>', then this
  *  routine will bind or connect the socket (respectively) to
@@ -801,8 +801,8 @@ void attach(socket & s, Iterator begin, Iterator end, bool serverish = true) {
  *  will bound (the default) or connected (serverish == false).
  */
 template<typename Range>
-boost::system::error_code attach(socket & s, Range r,
-                                 boost::system::error_code & ec,
+asio::error_code attach(socket & s, Range r,
+                                 asio::error_code & ec,
                                  bool serverish = true) {
     return attach(s, std::begin(r), std::end(r), ec, serverish);
 }
@@ -813,7 +813,7 @@ boost::system::error_code attach(socket & s, Range r,
  *  \param s socket& to attach to supplied endpoints
  *  \param r Range of endpoints
  *  \param serverish bool (defaults to true) - See remarks
- *  \throw boost::system::system_error
+ *  \throw asio::system_error
  *  \remarks
  *  If each endpoint is prefixed with '@' or '>', then this
  *  routine will bind or connect the socket (respectively) to
@@ -823,9 +823,9 @@ boost::system::error_code attach(socket & s, Range r,
  */
 template<typename Range>
 void attach(socket & s, Range r, bool serverish = true) {
-    boost::system::error_code ec;
+    asio::error_code ec;
     if (attach(s, std::begin(r), std::end(r), ec, serverish))
-        throw boost::system::system_error(ec);
+        throw asio::system_error(ec);
 }
 AZMQ_V1_INLINE_NAMESPACE_END
 } // namespace azmq

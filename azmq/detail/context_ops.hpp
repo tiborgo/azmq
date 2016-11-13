@@ -13,7 +13,7 @@
 #include "../option.hpp"
 
 #include <boost/assert.hpp>
-#include <boost/system/error_code.hpp>
+#include <system_error>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/lock_guard.hpp>
 
@@ -48,9 +48,9 @@ namespace detail {
         }
 
         template<typename Option>
-        static boost::system::error_code set_option(context_type & ctx,
+        static asio::error_code set_option(context_type & ctx,
                                                     Option const& option,
-                                                    boost::system::error_code & ec) {
+                                                    asio::error_code & ec) {
             BOOST_ASSERT_MSG(ctx, "context must not be null");
             auto rc = zmq_ctx_set(ctx.get(), option.name(), option.value());
             if (!rc)
@@ -59,9 +59,9 @@ namespace detail {
         }
 
         template<typename Option>
-        static boost::system::error_code get_option(context_type & ctx,
+        static asio::error_code get_option(context_type & ctx,
                                                     Option & option,
-                                                    boost::system::error_code & ec) {
+                                                    asio::error_code & ec) {
             BOOST_ASSERT_MSG(ctx, "context must not be null");
             auto rc = zmq_ctx_get(ctx.get(), option.name());
             if (rc < 0)

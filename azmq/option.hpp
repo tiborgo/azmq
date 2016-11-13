@@ -12,7 +12,7 @@
 #include "error.hpp"
 
 #include <zmq.h>
-#include <boost/asio/buffer.hpp>
+#include <asio/buffer.hpp>
 #include <boost/logic/tribool.hpp>
 
 #include <vector>

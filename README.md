@@ -59,10 +59,10 @@ http://zeromq.org/intro:read-the-manual
 
 ```cpp
 #include <azmq/socket.hpp>
-#include <boost/asio.hpp>
+#include <asio.hpp>
 #include <array>
 
-namespace asio = boost::asio;
+namespace asio = asio;
 
 int main(int argc, char** argv) {
     asio::io_service ios;

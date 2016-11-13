@@ -11,7 +11,7 @@
 #include "../error.hpp"
 
 #include <boost/assert.hpp>
-#include <boost/asio/io_service.hpp>
+#include <asio/io_service.hpp>
 
 #include <memory>
 #include <typeindex>
@@ -35,7 +35,7 @@ namespace detail {
             return *this;
         }
 
-        void on_install(boost::asio::io_service& ios, void * socket) const {
+        void on_install(asio::io_service& ios, void * socket) const {
             BOOST_ASSERT_MSG(ptr_, "reusing moved instance of socket_ext");
             ptr_->on_install(ios, socket);
         }
@@ -47,13 +47,13 @@ namespace detail {
         }
 
         template<typename Option>
-        boost::system::error_code set_option(Option const& opt, boost::system::error_code & ec) const {
+        asio::error_code set_option(Option const& opt, asio::error_code & ec) const {
             BOOST_ASSERT_MSG(ptr_, "reusing (re)moved instance of socket_ext");
             return ptr_->set_option(opt_model<Option>(const_cast<Option&>(opt)), ec);
         }
 
         template<typename Option>
-        boost::system::error_code get_option(Option & opt, boost::system::error_code & ec) const {
+        asio::error_code get_option(Option & opt, asio::error_code & ec) const {
             BOOST_ASSERT_MSG(ptr_, "reusing (re)moved instance of socket_ext");
             return ptr_->set_option(opt_model<Option>(opt), ec);
         }
@@ -83,10 +83,10 @@ namespace detail {
         struct concept {
             virtual ~concept() = default;
 
-            virtual void on_install(boost::asio::io_service &, void *) = 0;
+            virtual void on_install(asio::io_service &, void *) = 0;
             virtual void on_remove() = 0;
-            virtual boost::system::error_code set_option(opt_concept const&, boost::system::error_code &) = 0;
-            virtual boost::system::error_code get_option(opt_concept &, boost::system::error_code &) = 0;
+            virtual asio::error_code set_option(opt_concept const&, asio::error_code &) = 0;
+            virtual asio::error_code get_option(opt_concept &, asio::error_code &) = 0;
         };
         std::unique_ptr<concept> ptr_;
 
@@ -96,13 +96,13 @@ namespace detail {
 
             model(T data): data_(std::move(data)) { }
 
-            void on_install(boost::asio::io_service & ios, void * socket) override { data_.on_install(ios, socket); }
+            void on_install(asio::io_service & ios, void * socket) override { data_.on_install(ios, socket); }
             void on_remove() override { data_.on_remove(); }
-            boost::system::error_code set_option(opt_concept const& opt, boost::system::error_code & ec) override {
+            asio::error_code set_option(opt_concept const& opt, asio::error_code & ec) override {
                 return data_.set_option(opt, ec);
             }
 
-            boost::system::error_code get_option(opt_concept & opt, boost::system::error_code & ec) override {
+            asio::error_code get_option(opt_concept & opt, asio::error_code & ec) override {
                 return data_.get_option(opt, ec);
             }
         };

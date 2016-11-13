@@ -19,13 +19,13 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
  *  distinguishable from "normal" messages.
  *  \param s socket& to signal on
  *  \param status uint8_t to send
- *  \param ec boost::system::error_code&
- *  \return boost::system::error_code
+ *  \param ec asio::error_code&
+ *  \return asio::error_code
  */
-boost::system::error_code send(socket & s, uint8_t status,
-                               boost::system::error_code & ec) {
+asio::error_code send(socket & s, uint8_t status,
+                               asio::error_code & ec) {
     uint64_t v = 0x77664433221100u + status;
-    auto buf = boost::asio::buffer(&v, sizeof(v));
+    auto buf = asio::buffer(&v, sizeof(v));
     s.send(buf, 0, ec);
     return ec;
 }
@@ -35,21 +35,21 @@ boost::system::error_code send(socket & s, uint8_t status,
  *  distinguishable from "normal" messages.
  *  \param s socket& to signal on
  *  \param status uint8_t to send
- *  \throw boost::system::system_error
+ *  \throw asio::system_error
  */
 void send(socket & s, uint8_t status) {
-    boost::system::error_code ec;
+    asio::error_code ec;
     if (send(s, status, ec))
-        throw boost::system::system_error(ec);
+        throw asio::system_error(ec);
 }
 
 /** \brief Wait on a signal from a socket. Use this with signal() to coordiante
  *  over thread/actor pipes
  *  \param s socket& to receive signal from
- *  \param ec boost::system::error_code
+ *  \param ec asio::error_code
  *  \return signal
  */
-uint8_t wait(socket & s, boost::system::error_code & ec) {
+uint8_t wait(socket & s, asio::error_code & ec) {
     message msg;
     while (true) {
         auto sz = s.receive(msg, 0, ec);
@@ -67,13 +67,13 @@ uint8_t wait(socket & s, boost::system::error_code & ec) {
  *  over thread/actor pipes
  *  \param s socket& to receive signal from
  *  \return signal
- *  \throw boost::system::system_error
+ *  \throw asio::system_error
  */
 uint8_t wait(socket & s) {
-    boost::system::error_code ec;
+    asio::error_code ec;
     auto res = wait(s, ec);
     if (ec)
-        throw boost::system::system_error(ec);
+        throw asio::system_error(ec);
     return res;
 }
 

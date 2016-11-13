@@ -13,7 +13,7 @@
 #include "socket_ops.hpp"
 
 #include <boost/optional.hpp>
-#include <boost/asio/io_service.hpp>
+#include <asio/io_service.hpp>
 #include <boost/intrusive/list.hpp>
 
 namespace azmq {
@@ -23,7 +23,7 @@ public:
     using socket_type = socket_ops::socket_type;
     using flags_type = socket_ops::flags_type;
     boost::intrusive::list_member_hook<> member_hook_;
-    boost::system::error_code ec_;
+    asio::error_code ec_;
     size_t bytes_transferred_;
 
     bool do_perform(socket_type & socket) { return perform_func_(this, socket); }
@@ -31,17 +31,17 @@ public:
         op->complete_func_(op, op->ec_, op->bytes_transferred_);
     }
 
-    static boost::system::error_code canceled() { return boost::asio::error::operation_aborted; }
+    static asio::error_code canceled() { return asio::error::operation_aborted; }
 
 protected:
     typedef bool (*perform_func_type)(reactor_op*, socket_type &);
-    typedef void (*complete_func_type)(reactor_op* op, boost::system::error_code const&, size_t);
+    typedef void (*complete_func_type)(reactor_op* op, asio::error_code const&, size_t);
 
     perform_func_type perform_func_;
     complete_func_type complete_func_;
 
     bool try_again() const {
-        return ec_.value() == boost::system::errc::resource_unavailable_try_again;
+        return ec_ == std::errc::resource_unavailable_try_again;
     }
 
     bool is_canceled() const { return ec_ == canceled(); }

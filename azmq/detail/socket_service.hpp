@@ -27,7 +27,7 @@
 #include <boost/assert.hpp>
 #include <boost/optional.hpp>
 #include <boost/intrusive/list.hpp>
-#include <boost/system/system_error.hpp>
+#include <asio/system_error.hpp>
 #include <boost/container/flat_map.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/lock_guard.hpp>
@@ -87,11 +87,11 @@ namespace detail {
             bool serverish_ = false;
             std::array<op_queue_type, max_ops> op_queue_;
 
-            void do_open(boost::asio::io_service & ios,
+            void do_open(asio::io_service & ios,
                          context_type & ctx,
                          int type,
                          bool optimize_single_threaded,
-                         boost::system::error_code & ec) {
+                         asio::error_code & ec) {
                 BOOST_ASSERT_MSG(!socket_, "socket already open");
                 socket_ = socket_ops::create_socket(ctx, type, ec);
                 if (ec) return;
@@ -109,7 +109,7 @@ namespace detail {
                      | (!op_queue_[write_op].empty() ? ZMQ_POLLOUT : 0);
             }
 
-            bool perform_ops(op_queue_type & ops, boost::system::error_code& ec) {
+            bool perform_ops(op_queue_type & ops, asio::error_code& ec) {
                 while (int evs = socket_ops::get_events(socket_, ec) & events_mask()) {
                     static_assert(2 == max_ops, "2 == max_ops");
                     const int filter[max_ops] = { ZMQ_POLLIN, ZMQ_POLLOUT };
@@ -126,11 +126,11 @@ namespace detail {
                 return 0 != events_mask(); // true if more operations scheduled
             }
 
-            boost::system::error_code cancel_stream_descriptor(boost::system::error_code & ec) {
+            asio::error_code cancel_stream_descriptor(asio::error_code & ec) {
                 return socket_ops::cancel_stream_descriptor(sd_, ec);
             }
 
-            void cancel_ops(boost::system::error_code const& ec, op_queue_type & ops) {
+            void cancel_ops(asio::error_code const& ec, op_queue_type & ops) {
                 for (size_t i = 0; i != max_ops; ++i) {
                     while (!op_queue_[i].empty()) {
                         op_queue_[i].front().ec_ = ec;
@@ -157,10 +157,10 @@ namespace detail {
                                         "XPUB", "XSUB", "STREAM"
                                       };
                 static_assert(ZMQ_PAIR == 0, "ZMQ_PAIR");
-                boost::system::error_code ec;
+                asio::error_code ec;
                 auto kind = socket_ops::get_socket_kind(socket_, ec);
                 if (ec)
-                    throw boost::system::system_error(ec);
+                    throw asio::system_error(ec);
                 BOOST_ASSERT_MSG(kind >= 0 && kind <= ZMQ_STREAM, "kind not in [ZMQ_PAIR, ZMQ_STREAM]");
                 stm << "socket[" << kinds[kind] << "]{ ";
                 if (!endpoint_.empty())
@@ -188,7 +188,7 @@ namespace detail {
 
         using core_access = azmq::detail::core_access<socket_service>;
 
-        explicit socket_service(boost::asio::io_service & ios)
+        explicit socket_service(asio::io_service & ios)
             : azmq::detail::service_base<socket_service>(ios)
             , ctx_(context_ops::get_context())
         { }
@@ -215,10 +215,10 @@ namespace detail {
             impl = std::move(other);
         }
 
-        boost::system::error_code do_open(implementation_type & impl,
+        asio::error_code do_open(implementation_type & impl,
                                           int type,
                                           bool optimize_single_threaded,
-                                          boost::system::error_code & ec) {
+                                          asio::error_code & ec) {
             BOOST_ASSERT_MSG(impl, "impl");
             impl->do_open(get_io_service(), ctx_, type, optimize_single_threaded, ec);
             if (ec)
@@ -263,76 +263,76 @@ namespace detail {
         }
 
         template<typename Option>
-        boost::system::error_code set_option(Option const& option,
-                                             boost::system::error_code & ec) {
+        asio::error_code set_option(Option const& option,
+                                             asio::error_code & ec) {
             return context_ops::set_option(ctx_, option, ec);
         }
 
         template<typename Option>
-        boost::system::error_code get_option(Option & option,
-                                             boost::system::error_code & ec) {
+        asio::error_code get_option(Option & option,
+                                             asio::error_code & ec) {
             return context_ops::get_option(ctx_, option, ec);
         }
 
         template<typename Option>
-        boost::system::error_code set_option(implementation_type & impl,
+        asio::error_code set_option(implementation_type & impl,
                                              Option const& option,
-                                             boost::system::error_code & ec) {
+                                             asio::error_code & ec) {
             unique_lock l{ *impl };
             switch (option.name()) {
             case allow_speculative::static_name::value :
-                    ec = boost::system::error_code();
+                    ec = asio::error_code();
                     impl->allow_speculative_ = option.data() ? *static_cast<bool const*>(option.data())
                                                              : false;
                 break;
             default:
                 for (auto& ext : impl->exts_) {
                     if (ext.second.set_option(option, ec)) {
-                        if (ec.value() == boost::system::errc::not_supported) continue;
+                        if (ec == std::errc::not_supported) continue;
                         return ec;
                     }
                 }
-                ec = boost::system::error_code();
+                ec = asio::error_code();
                 socket_ops::set_option(impl->socket_, option, ec);
             }
             return ec;
         }
 
         template<typename Option>
-        boost::system::error_code get_option(implementation_type & impl,
+        asio::error_code get_option(implementation_type & impl,
                                              Option & option,
-                                             boost::system::error_code & ec) {
+                                             asio::error_code & ec) {
             unique_lock l{ *impl };
             switch (option.name()) {
             case allow_speculative::static_name::value :
                     if (option.size() < sizeof(bool)) {
-                        ec = make_error_code(boost::system::errc::invalid_argument);
+                        ec = make_error_code(std::errc::invalid_argument);
                     } else {
-                        ec = boost::system::error_code();
+                        ec = asio::error_code();
                         *static_cast<bool*>(option.data()) = impl->allow_speculative_;
                     }
                 break;
             default:
                 for (auto& ext : impl->exts_) {
                     if (ext.second.get_option(option, ec)) {
-                        if (ec.value() == boost::system::errc::not_supported) continue;
+                        if (ec == std::errc::not_supported) continue;
                         return ec;
                     }
                 }
-                ec = boost::system::error_code();
+                ec = asio::error_code();
                 socket_ops::get_option(impl->socket_, option, ec);
             }
             return ec;
         }
 
-        boost::system::error_code shutdown(implementation_type & impl,
+        asio::error_code shutdown(implementation_type & impl,
                                            shutdown_type what,
-                                           boost::system::error_code & ec) {
+                                           asio::error_code & ec) {
             unique_lock l{ *impl };
             if (impl->shutdown_ < what)
                 impl->shutdown_ = what;
             else
-                ec = make_error_code(boost::system::errc::operation_not_permitted);
+                ec = make_error_code(std::errc::operation_not_permitted);
             return ec;
         }
 
@@ -341,9 +341,9 @@ namespace detail {
             return impl->endpoint_;
         }
 
-        boost::system::error_code bind(implementation_type & impl,
+        asio::error_code bind(implementation_type & impl,
                                        socket_ops::endpoint_type endpoint,
-                                       boost::system::error_code & ec) {
+                                       asio::error_code & ec) {
             unique_lock l{ *impl };
             // Note - socket_ops::bind() may modify the local copy of endpoint
             if (socket_ops::bind(impl->socket_, endpoint, ec))
@@ -352,9 +352,9 @@ namespace detail {
             return ec;
         }
 
-        boost::system::error_code unbind(implementation_type & impl,
+        asio::error_code unbind(implementation_type & impl,
                                          socket_ops::endpoint_type const& endpoint,
-                                         boost::system::error_code & ec) {
+                                         asio::error_code & ec) {
             unique_lock l{ *impl };
             if (socket_ops::unbind(impl->socket_, endpoint, ec))
                 return ec;
@@ -362,9 +362,9 @@ namespace detail {
             return ec;
         }
 
-        boost::system::error_code connect(implementation_type & impl,
+        asio::error_code connect(implementation_type & impl,
                                           socket_ops::endpoint_type endpoint,
-                                          boost::system::error_code & ec) {
+                                          asio::error_code & ec) {
             unique_lock l{ *impl };
             if (socket_ops::connect(impl->socket_, endpoint, ec))
                 return ec;
@@ -372,9 +372,9 @@ namespace detail {
             return ec;
         }
 
-        boost::system::error_code disconnect(implementation_type & impl,
+        asio::error_code disconnect(implementation_type & impl,
                                              socket_ops::endpoint_type const& endpoint,
-                                             boost::system::error_code & ec) {
+                                             asio::error_code & ec) {
             unique_lock l{ *impl };
             if (socket_ops::disconnect(impl->socket_, endpoint, ec))
                 return ec;
@@ -386,7 +386,7 @@ namespace detail {
         size_t send(implementation_type & impl,
                     ConstBufferSequence const& buffers,
                     flags_type flags,
-                    boost::system::error_code & ec) {
+                    asio::error_code & ec) {
             unique_lock l{ *impl };
             if (is_shutdown(impl, op_type::write_op, ec))
                 return 0;
@@ -398,7 +398,7 @@ namespace detail {
         size_t send(implementation_type & impl,
                     message const& msg,
                     flags_type flags,
-                    boost::system::error_code & ec) {
+                    asio::error_code & ec) {
             unique_lock l{ *impl };
             if (is_shutdown(impl, op_type::write_op, ec))
                 return 0;
@@ -411,7 +411,7 @@ namespace detail {
         size_t receive(implementation_type & impl,
                        MutableBufferSequence const& buffers,
                        flags_type flags,
-                       boost::system::error_code & ec) {
+                       asio::error_code & ec) {
             unique_lock l{ *impl };
             if (is_shutdown(impl, op_type::read_op, ec))
                 return 0;
@@ -423,7 +423,7 @@ namespace detail {
         size_t receive(implementation_type & impl,
                        message & msg,
                        flags_type flags,
-                       boost::system::error_code & ec) {
+                       asio::error_code & ec) {
             unique_lock l{ *impl };
             if (is_shutdown(impl, op_type::read_op, ec))
                 return 0;
@@ -435,7 +435,7 @@ namespace detail {
         size_t receive_more(implementation_type & impl,
                             message_vector & vec,
                             flags_type flags,
-                            boost::system::error_code & ec) {
+                            asio::error_code & ec) {
             unique_lock l{ *impl };
             if (is_shutdown(impl, op_type::read_op, ec))
                 return 0;
@@ -445,7 +445,7 @@ namespace detail {
         }
 
         size_t flush(implementation_type & impl,
-                     boost::system::error_code & ec) {
+                     asio::error_code & ec) {
             unique_lock l{ *impl };
             if (is_shutdown(impl, op_type::read_op, ec))
                 return 0;
@@ -458,7 +458,7 @@ namespace detail {
         template<typename T, typename... Args>
         void enqueue(implementation_type & impl, op_type o, Args&&... args) {
             reactor_op_ptr p{ new T(std::forward<Args>(args)...) };
-            boost::system::error_code ec = enqueue(impl, o, p);
+            asio::error_code ec = enqueue(impl, o, p);
             if (ec) {
                 BOOST_ASSERT_MSG(p, "op ptr");
                 p->ec_ = ec;
@@ -466,8 +466,8 @@ namespace detail {
             }
         }
 
-        boost::system::error_code cancel(implementation_type & impl,
-                                         boost::system::error_code & ec) {
+        asio::error_code cancel(implementation_type & impl,
+                                         asio::error_code & ec) {
             unique_lock l{ *impl };
             descriptors_.unregister_descriptor(impl);
             cancel_ops(impl);
@@ -475,7 +475,7 @@ namespace detail {
         }
 
         std::string monitor(implementation_type & impl, int events,
-                            boost::system::error_code & ec) {
+                            asio::error_code & ec) {
             return socket_ops::monitor(impl->socket_, events, ec);
         }
 
@@ -488,9 +488,9 @@ namespace detail {
     private:
         context_type ctx_;
 
-        bool is_shutdown(implementation_type & impl, op_type o, boost::system::error_code & ec) {
+        bool is_shutdown(implementation_type & impl, op_type o, asio::error_code & ec) {
             if (is_shutdown(o, impl->shutdown_)) {
-                ec = make_error_code(boost::system::errc::operation_not_permitted);
+                ec = make_error_code(std::errc::operation_not_permitted);
                 return true;
             }
             return false;
@@ -510,7 +510,7 @@ namespace detail {
 
         using weak_descriptor_ptr = std::weak_ptr<per_descriptor_data>;
 
-        static void handle_missed_events(weak_descriptor_ptr const& weak_impl, boost::system::error_code ec) {
+        static void handle_missed_events(weak_descriptor_ptr const& weak_impl, asio::error_code ec) {
             auto impl = weak_impl.lock();
             if (!impl)
                 return;
@@ -535,7 +535,7 @@ namespace detail {
             if (!impl->scheduled_ || impl->missed_events_found_)
                 return;
 
-            boost::system::error_code ec;
+            asio::error_code ec;
             auto evs = socket_ops::get_events(impl->socket_, ec) & impl->events_mask();
 
             if (evs || ec)
@@ -584,7 +584,7 @@ namespace detail {
                 , per_descriptor_data_(per_descriptor_data)
             { }
 
-            void operator()(boost::system::error_code ec, size_t) const {
+            void operator()(asio::error_code ec, size_t) const {
                 auto p = per_descriptor_data_.lock();
                 if (!p)
                     return;
@@ -601,7 +601,7 @@ namespace detail {
                     }
 
                     if (p->scheduled_)
-                        p->sd_->async_read_some(boost::asio::null_buffers(), *this);
+                        p->sd_->async_read_some(asio::null_buffers(), *this);
                     else
                         descriptors_.unregister_descriptor(p);
                 }
@@ -613,13 +613,13 @@ namespace detail {
                 reactor_handler handler(descriptors, impl);
                 descriptors.register_descriptor(impl);
 
-                boost::system::error_code ec;
+                asio::error_code ec;
                 auto evs = socket_ops::get_events(impl->socket_, ec) & impl->events_mask();
 
                 if (evs || ec) {
                     impl->sd_->get_io_service().post([handler, ec] { handler(ec, 0); });
                 } else {
-                    impl->sd_->async_read_some(boost::asio::null_buffers(),
+                    impl->sd_->async_read_some(asio::null_buffers(),
                                                 std::move(handler));
                 }
             }
@@ -649,10 +649,10 @@ namespace detail {
 
         descriptor_map descriptors_;
 
-        boost::system::error_code enqueue(implementation_type & impl,
+        asio::error_code enqueue(implementation_type & impl,
                                         op_type o, reactor_op_ptr & op) {
             unique_lock l{ *impl };
-            boost::system::error_code ec;
+            asio::error_code ec;
             if (is_shutdown(impl, o, ec))
                 return ec;
 

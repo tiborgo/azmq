@@ -9,24 +9,24 @@
 #ifndef AZMQ_DETAIL_SERVICE_BASE_HPP_
 #define AZMQ_DETAIL_SERVICE_BASE_HPP_
 
-#include <boost/asio/io_service.hpp>
+#include <asio/io_service.hpp>
 
 namespace azmq {
 namespace detail {
     template <typename T>
     class service_id
-        : public boost::asio::io_service::id
+        : public asio::io_service::id
     { };
 
     template<typename T>
     class service_base
-        : public boost::asio::io_service::service {
+        : public asio::io_service::service {
     public :
         static azmq::detail::service_id<T> id;
 
         // Constructor.
-        service_base(boost::asio::io_service& io_service)
-            : boost::asio::io_service::service(io_service)
+        service_base(asio::io_service& io_service)
+            : asio::io_service::service(io_service)
         { }
     };
 

@@ -8,7 +8,7 @@
 */
 #include <azmq/detail/context_ops.hpp>
 
-#include <boost/system/error_code.hpp>
+#include <system_error>
 
 #include <string>
 #include <iostream>
@@ -30,7 +30,7 @@ TEST_CASE( "context_creation", "[context]") {
 TEST_CASE( "context_options", "[context]" ) {
     auto ctx = azmq::detail::context_ops::get_context();
     using io_threads = azmq::detail::context_ops::io_threads;
-    boost::system::error_code ec;
+    asio::error_code ec;
     azmq::detail::context_ops::set_option(ctx, io_threads(2), ec);
     REQUIRE(!ec);
 

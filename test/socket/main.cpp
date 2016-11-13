@@ -12,7 +12,7 @@
 #include <boost/utility/string_ref.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
-#include <boost/asio/buffer.hpp>
+#include <asio/buffer.hpp>
 
 #include <array>
 #include <thread>
@@ -26,9 +26,9 @@
 #define CATCH_CONFIG_MAIN
 #include "../catch.hpp"
 
-std::array<boost::asio::const_buffer, 2> snd_bufs = {{
-    boost::asio::buffer("A"),
-    boost::asio::buffer("B")
+std::array<asio::const_buffer, 2> snd_bufs = {{
+    asio::buffer("A"),
+    asio::buffer("B")
 }};
 
 std::string subj(const char* name) {
@@ -36,7 +36,7 @@ std::string subj(const char* name) {
 }
 
 TEST_CASE( "Set/Get options", "[socket]" ) {
-    boost::asio::io_service ios;
+    asio::io_service ios;
 
     azmq::socket s(ios, ZMQ_ROUTER);
 
@@ -57,7 +57,7 @@ TEST_CASE( "Set/Get options", "[socket]" ) {
 }
 
 TEST_CASE( "Send/Receive single buffer", "[socket]") {
-    boost::asio::io_service ios;
+    asio::io_service ios;
 
     azmq::socket sb(ios, ZMQ_PAIR);
     sb.bind(subj(BOOST_CURRENT_FUNCTION));
@@ -66,18 +66,18 @@ TEST_CASE( "Send/Receive single buffer", "[socket]") {
     sc.connect(subj(BOOST_CURRENT_FUNCTION));
 
     auto msg = "TEST";
-    auto snd_buf = boost::asio::const_buffer(msg, 5);
+    auto snd_buf = asio::const_buffer(msg, 5);
     auto sz1 = sc.send(snd_buf);
 
     std::array<char, 256> buf;
-    auto sz2 = sb.receive(boost::asio::buffer(buf));
+    auto sz2 = sb.receive(asio::buffer(buf));
 
     REQUIRE(sz1 == sz2);
     REQUIRE(boost::string_ref(msg) == boost::string_ref(buf.data()));
 }
 
 TEST_CASE( "Send/Receive synchronous", "[socket]" ) {
-    boost::asio::io_service ios;
+    asio::io_service ios;
 
     azmq::socket sb(ios, ZMQ_ROUTER);
     sb.bind(subj(BOOST_CURRENT_FUNCTION));
@@ -92,11 +92,11 @@ TEST_CASE( "Send/Receive synchronous", "[socket]" ) {
     REQUIRE(msg.more() == true);
 
     size = sb.receive(msg, ZMQ_RCVMORE);
-    REQUIRE(size == boost::asio::buffer_size(snd_bufs[0]));
+    REQUIRE(size == asio::buffer_size(snd_bufs[0]));
     REQUIRE(msg.more() == true);
 
     size = sb.receive(msg);
-    REQUIRE(size == boost::asio::buffer_size(snd_bufs[1]));
+    REQUIRE(size == asio::buffer_size(snd_bufs[1]));
     REQUIRE(msg.more() == false);
 
     sc.send(snd_bufs);
@@ -105,10 +105,10 @@ TEST_CASE( "Send/Receive synchronous", "[socket]" ) {
     std::array<char, 2> a;
     std::array<char, 2> b;
 
-    std::array<boost::asio::mutable_buffer, 3> rcv_bufs = {{
-        boost::asio::buffer(ident),
-        boost::asio::buffer(a),
-        boost::asio::buffer(b)
+    std::array<asio::mutable_buffer, 3> rcv_bufs = {{
+        asio::buffer(ident),
+        asio::buffer(a),
+        asio::buffer(b)
     }};
 
     size = sb.receive(rcv_bufs);
@@ -116,8 +116,8 @@ TEST_CASE( "Send/Receive synchronous", "[socket]" ) {
 }
 
 TEST_CASE( "Send/Receive async", "[socket_ops]" ) {
-    boost::asio::io_service ios_b;
-    boost::asio::io_service ios_c;
+    asio::io_service ios_b;
+    asio::io_service ios_c;
 
     azmq::socket sb(ios_b, ZMQ_ROUTER);
     sb.bind(subj(BOOST_CURRENT_FUNCTION));
@@ -125,9 +125,9 @@ TEST_CASE( "Send/Receive async", "[socket_ops]" ) {
     azmq::socket sc(ios_c, ZMQ_DEALER);
     sc.connect(subj(BOOST_CURRENT_FUNCTION));
 
-    boost::system::error_code ecc;
+    asio::error_code ecc;
     size_t btc = 0;
-    sc.async_send(snd_bufs, [&] (boost::system::error_code const& ec, size_t bytes_transferred) {
+    sc.async_send(snd_bufs, [&] (asio::error_code const& ec, size_t bytes_transferred) {
         SCOPE_EXIT { ios_c.stop(); };
         ecc = ec;
         btc = bytes_transferred;
@@ -137,15 +137,15 @@ TEST_CASE( "Send/Receive async", "[socket_ops]" ) {
     std::array<char, 2> a;
     std::array<char, 2> b;
 
-    std::array<boost::asio::mutable_buffer, 3> rcv_bufs = {{
-        boost::asio::buffer(ident),
-        boost::asio::buffer(a),
-        boost::asio::buffer(b)
+    std::array<asio::mutable_buffer, 3> rcv_bufs = {{
+        asio::buffer(ident),
+        asio::buffer(a),
+        asio::buffer(b)
     }};
 
-    boost::system::error_code ecb;
+    asio::error_code ecb;
     size_t btb = 0;
-    sb.async_receive(rcv_bufs, [&](boost::system::error_code const& ec, size_t bytes_transferred) {
+    sb.async_receive(rcv_bufs, [&](asio::error_code const& ec, size_t bytes_transferred) {
         SCOPE_EXIT { ios_b.stop(); };
         ecb = ec;
         btb = bytes_transferred;
@@ -154,15 +154,15 @@ TEST_CASE( "Send/Receive async", "[socket_ops]" ) {
     ios_c.run();
     ios_b.run();
 
-    REQUIRE(ecc == boost::system::error_code());
+    REQUIRE(ecc == asio::error_code());
     REQUIRE(btc == 4);
-    REQUIRE(ecb == boost::system::error_code());
+    REQUIRE(ecb == asio::error_code());
     REQUIRE(btb == 9);
 }
 
 TEST_CASE( "Send/Receive async is_speculative", "[socket_ops]" ) {
-    boost::asio::io_service ios_b;
-    boost::asio::io_service ios_c;
+    asio::io_service ios_b;
+    asio::io_service ios_c;
 
     azmq::socket sb(ios_b, ZMQ_ROUTER);
     sb.set_option(azmq::socket::allow_speculative(true));
@@ -172,9 +172,9 @@ TEST_CASE( "Send/Receive async is_speculative", "[socket_ops]" ) {
     sc.set_option(azmq::socket::allow_speculative(true));
     sc.connect(subj(BOOST_CURRENT_FUNCTION));
 
-    boost::system::error_code ecc;
+    asio::error_code ecc;
     size_t btc = 0;
-    sc.async_send(snd_bufs, [&] (boost::system::error_code const& ec, size_t bytes_transferred) {
+    sc.async_send(snd_bufs, [&] (asio::error_code const& ec, size_t bytes_transferred) {
         SCOPE_EXIT { ios_c.stop(); };
         ecc = ec;
         btc = bytes_transferred;
@@ -184,15 +184,15 @@ TEST_CASE( "Send/Receive async is_speculative", "[socket_ops]" ) {
     std::array<char, 2> a;
     std::array<char, 2> b;
 
-    std::array<boost::asio::mutable_buffer, 3> rcv_bufs = {{
-        boost::asio::buffer(ident),
-        boost::asio::buffer(a),
-        boost::asio::buffer(b)
+    std::array<asio::mutable_buffer, 3> rcv_bufs = {{
+        asio::buffer(ident),
+        asio::buffer(a),
+        asio::buffer(b)
     }};
 
-    boost::system::error_code ecb;
+    asio::error_code ecb;
     size_t btb = 0;
-    sb.async_receive(rcv_bufs, [&](boost::system::error_code const& ec, size_t bytes_transferred) {
+    sb.async_receive(rcv_bufs, [&](asio::error_code const& ec, size_t bytes_transferred) {
         SCOPE_EXIT { ios_b.stop(); };
         ecb = ec;
         btb = bytes_transferred;
@@ -201,25 +201,25 @@ TEST_CASE( "Send/Receive async is_speculative", "[socket_ops]" ) {
     ios_c.run();
     ios_b.run();
 
-    REQUIRE(ecc == boost::system::error_code());
+    REQUIRE(ecc == asio::error_code());
     REQUIRE(btc == 4);
-    REQUIRE(ecb == boost::system::error_code());
+    REQUIRE(ecb == asio::error_code());
     REQUIRE(btb == 9);
 }
 
 TEST_CASE( "Send/Receive async threads", "[socket]" ) {
-    boost::asio::io_service ios_b;
+    asio::io_service ios_b;
     azmq::socket sb(ios_b, ZMQ_ROUTER);
     sb.bind(subj(BOOST_CURRENT_FUNCTION));
 
-    boost::asio::io_service ios_c;
+    asio::io_service ios_c;
     azmq::socket sc(ios_c, ZMQ_DEALER);
     sc.connect(subj(BOOST_CURRENT_FUNCTION));
 
-    boost::system::error_code ecc;
+    asio::error_code ecc;
     size_t btc = 0;
     std::thread tc([&] {
-        sc.async_send(snd_bufs, [&] (boost::system::error_code const& ec, size_t bytes_transferred) {
+        sc.async_send(snd_bufs, [&] (asio::error_code const& ec, size_t bytes_transferred) {
             SCOPE_EXIT { ios_c.stop(); };
             ecc = ec;
             btc = bytes_transferred;
@@ -227,20 +227,20 @@ TEST_CASE( "Send/Receive async threads", "[socket]" ) {
         ios_c.run();
     });
 
-    boost::system::error_code ecb;
+    asio::error_code ecb;
     size_t btb = 0;
     std::thread tb([&] {
         std::array<char, 5> ident;
         std::array<char, 2> a;
         std::array<char, 2> b;
 
-        std::array<boost::asio::mutable_buffer, 3> rcv_bufs = {{
-            boost::asio::buffer(ident),
-            boost::asio::buffer(a),
-            boost::asio::buffer(b)
+        std::array<asio::mutable_buffer, 3> rcv_bufs = {{
+            asio::buffer(ident),
+            asio::buffer(a),
+            asio::buffer(b)
         }};
 
-        sb.async_receive(rcv_bufs, [&](boost::system::error_code const& ec, size_t bytes_transferred) {
+        sb.async_receive(rcv_bufs, [&](asio::error_code const& ec, size_t bytes_transferred) {
             SCOPE_EXIT { ios_b.stop(); };
             ecb = ec;
             btb = bytes_transferred;
@@ -250,15 +250,15 @@ TEST_CASE( "Send/Receive async threads", "[socket]" ) {
 
     tc.join();
     tb.join();
-    REQUIRE(ecc == boost::system::error_code());
+    REQUIRE(ecc == asio::error_code());
     REQUIRE(btc == 4);
-    REQUIRE(ecc == boost::system::error_code());
+    REQUIRE(ecc == asio::error_code());
     REQUIRE(btb == 9);
 }
 
 TEST_CASE( "Send/Receive message async", "[socket]" ) {
-    boost::asio::io_service ios_b;
-    boost::asio::io_service ios_c;
+    asio::io_service ios_b;
+    asio::io_service ios_c;
 
     azmq::socket sb(ios_b, ZMQ_ROUTER);
     sb.bind(subj(BOOST_CURRENT_FUNCTION));
@@ -266,9 +266,9 @@ TEST_CASE( "Send/Receive message async", "[socket]" ) {
     azmq::socket sc(ios_c, ZMQ_DEALER);
     sc.connect(subj(BOOST_CURRENT_FUNCTION));
 
-    boost::system::error_code ecc;
+    asio::error_code ecc;
     size_t btc = 0;
-    sc.async_send(snd_bufs, [&] (boost::system::error_code const& ec, size_t bytes_transferred) {
+    sc.async_send(snd_bufs, [&] (asio::error_code const& ec, size_t bytes_transferred) {
         SCOPE_EXIT { ios_c.stop(); };
         ecc = ec;
         btc = bytes_transferred;
@@ -278,43 +278,43 @@ TEST_CASE( "Send/Receive message async", "[socket]" ) {
     std::array<char, 2> a;
     std::array<char, 2> b;
 
-    boost::system::error_code ecb;
+    asio::error_code ecb;
     size_t btb = 0;
-    sb.async_receive([&](boost::system::error_code const& ec, azmq::message & msg, size_t bytes_transferred) {
+    sb.async_receive([&](asio::error_code const& ec, azmq::message & msg, size_t bytes_transferred) {
         SCOPE_EXIT { ios_b.stop(); };
         ecb = ec;
         if (ecb)
             return;
         btb += bytes_transferred;
-        msg.buffer_copy(boost::asio::buffer(ident));
+        msg.buffer_copy(asio::buffer(ident));
 
         if (msg.more()) {
             btb += sb.receive(msg, ZMQ_RCVMORE, ecb);
             if (ecb)
                 return;
-            msg.buffer_copy(boost::asio::buffer(a));
+            msg.buffer_copy(asio::buffer(a));
         }
 
         if (msg.more()) {
             btb += sb.receive(msg, 0, ecb);
             if (ecb)
                 return;
-            msg.buffer_copy(boost::asio::buffer(b));
+            msg.buffer_copy(asio::buffer(b));
         }
     });
 
     ios_c.run();
     ios_b.run();
 
-    REQUIRE(ecc == boost::system::error_code());
+    REQUIRE(ecc == asio::error_code());
     REQUIRE(btc == 4);
-    REQUIRE(ecc == boost::system::error_code());
+    REQUIRE(ecc == asio::error_code());
     REQUIRE(btb == 9);
 }
 
 TEST_CASE( "Send/Receive message more async", "[socket]" ) {
-    boost::asio::io_service ios_b;
-    boost::asio::io_service ios_c;
+    asio::io_service ios_b;
+    asio::io_service ios_c;
 
     azmq::socket sb(ios_b, ZMQ_ROUTER);
     sb.bind(subj(BOOST_CURRENT_FUNCTION));
@@ -322,9 +322,9 @@ TEST_CASE( "Send/Receive message more async", "[socket]" ) {
     azmq::socket sc(ios_c, ZMQ_DEALER);
     sc.connect(subj(BOOST_CURRENT_FUNCTION));
 
-    boost::system::error_code ecc;
+    asio::error_code ecc;
     size_t btc = 0;
-    sc.async_send(snd_bufs, [&] (boost::system::error_code const& ec, size_t bytes_transferred) {
+    sc.async_send(snd_bufs, [&] (asio::error_code const& ec, size_t bytes_transferred) {
         SCOPE_EXIT { ios_c.stop(); };
         ecc = ec;
         btc = bytes_transferred;
@@ -334,20 +334,20 @@ TEST_CASE( "Send/Receive message more async", "[socket]" ) {
     std::array<char, 2> a;
     std::array<char, 2> b;
 
-    std::array<boost::asio::mutable_buffer, 2> rcv_bufs = {{
-        boost::asio::buffer(a),
-        boost::asio::buffer(b)
+    std::array<asio::mutable_buffer, 2> rcv_bufs = {{
+        asio::buffer(a),
+        asio::buffer(b)
     }};
 
-    boost::system::error_code ecb;
+    asio::error_code ecb;
     size_t btb = 0;
-    sb.async_receive([&](boost::system::error_code const& ec, azmq::message & msg, size_t bytes_transferred) {
+    sb.async_receive([&](asio::error_code const& ec, azmq::message & msg, size_t bytes_transferred) {
         SCOPE_EXIT { ios_b.stop(); };
         ecb = ec;
         if (ecb)
             return;
         btb += bytes_transferred;
-        msg.buffer_copy(boost::asio::buffer(ident));
+        msg.buffer_copy(asio::buffer(ident));
 
         if (!msg.more())
             return;
@@ -364,9 +364,9 @@ TEST_CASE( "Send/Receive message more async", "[socket]" ) {
     ios_c.run();
     ios_b.run();
 
-    REQUIRE(ecc == boost::system::error_code());
+    REQUIRE(ecc == asio::error_code());
     REQUIRE(btc == 4);
-    REQUIRE(ecc == boost::system::error_code());
+    REQUIRE(ecc == asio::error_code());
     REQUIRE(btb == 9);
 }
 
@@ -392,19 +392,19 @@ struct monitor_handler {
     std::string role_;
     std::vector<event_t> events_;
 
-    monitor_handler(boost::asio::io_service & ios, azmq::socket& s, std::string role)
+    monitor_handler(asio::io_service & ios, azmq::socket& s, std::string role)
         : socket_(s.monitor(ios, ZMQ_EVENT_ALL))
         , role_(std::move(role))
     { }
 
     void start()
     {
-        socket_.async_receive([this](boost::system::error_code const& ec,
+        socket_.async_receive([this](asio::error_code const& ec,
                                      azmq::message & msg, size_t) {
                 if (ec)
                     return;
                 event_t event;
-                msg.buffer_copy(boost::asio::buffer(&event, sizeof(event)));
+                msg.buffer_copy(asio::buffer(&event, sizeof(event)));
                 events_.push_back(event);
                 socket_.flush();
                 start();
@@ -419,17 +419,17 @@ struct monitor_handler {
 
 void bounce(azmq::socket & server, azmq::socket & client) {
     const char *content = "12345678ABCDEFGH12345678abcdefgh";
-    std::array<boost::asio::const_buffer, 2> snd_bufs = {{
-        boost::asio::buffer(content, 32),
-        boost::asio::buffer(content, 32)
+    std::array<asio::const_buffer, 2> snd_bufs = {{
+        asio::buffer(content, 32),
+        asio::buffer(content, 32)
     }};
 
     std::array<char, 32> buf0;
     std::array<char, 32> buf1;
 
-    std::array<boost::asio::mutable_buffer, 2> rcv_bufs = {{
-        boost::asio::buffer(buf0),
-        boost::asio::buffer(buf1)
+    std::array<asio::mutable_buffer, 2> rcv_bufs = {{
+        asio::buffer(buf0),
+        asio::buffer(buf1)
     }};
     client.send(snd_bufs);
     server.receive(rcv_bufs);
@@ -438,8 +438,8 @@ void bounce(azmq::socket & server, azmq::socket & client) {
 }
 
 TEST_CASE( "Socket Monitor", "[socket]" ) {
-    boost::asio::io_service ios;
-    boost::asio::io_service ios_m;
+    asio::io_service ios;
+    asio::io_service ios_m;
 
     using socket_ptr = std::unique_ptr<azmq::socket>;
     socket_ptr client(new azmq::socket(ios, ZMQ_DEALER));
@@ -485,7 +485,7 @@ TEST_CASE( "Socket Monitor", "[socket]" ) {
 
 TEST_CASE( "Attach Method", "[socket]" ) {
     using namespace boost::algorithm;
-    boost::asio::io_service ios;
+    asio::io_service ios;
     azmq::dealer_socket s(ios);
 
     std::vector<std::string> elems;
@@ -495,7 +495,7 @@ TEST_CASE( "Attach Method", "[socket]" ) {
 }
 
 TEST_CASE( "Pub/Sub", "[socket]" ) {
-    boost::asio::io_service ios;
+    asio::io_service ios;
     azmq::sub_socket subscriber(ios);
     subscriber.connect("tcp://127.0.0.1:5556");
     subscriber.set_option(azmq::socket::subscribe("FOO"));
@@ -505,9 +505,9 @@ TEST_CASE( "Pub/Sub", "[socket]" ) {
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
-    publisher.send(boost::asio::buffer(std::string("FOOBAR")));
+    publisher.send(asio::buffer(std::string("FOOBAR")));
     std::array<char, 256> buf;
-    auto size = subscriber.receive(boost::asio::buffer(buf));
+    auto size = subscriber.receive(asio::buffer(buf));
 
     REQUIRE(size == 6);
 }
@@ -517,17 +517,17 @@ struct state {
     size_t ct;
     std::array<char, 5> ident;
     std::array<char, 256> buf;
-    boost::system::error_code ec;
+    asio::error_code ec;
 
     state(size_t m) : max(m), ct(0) { }
 
     static void run(state & s, azmq::socket & sb) {
-        std::array<boost::asio::mutable_buffer, 2> rcv_bufs = {{
-            boost::asio::buffer(s.ident),
-            boost::asio::buffer(s.buf)
+        std::array<asio::mutable_buffer, 2> rcv_bufs = {{
+            asio::buffer(s.ident),
+            asio::buffer(s.buf)
         }};
 
-        sb.async_receive(rcv_bufs, [&] (boost::system::error_code const& ec, size_t) {
+        sb.async_receive(rcv_bufs, [&] (asio::error_code const& ec, size_t) {
             if (ec) {
                 s.ec = ec;
                 sb.get_io_service().stop();
@@ -542,8 +542,8 @@ struct state {
 };
 
 TEST_CASE( "Loopback", "[socket]" ) {
-    boost::asio::io_service ios_b;
-    boost::asio::io_service ios_c;
+    asio::io_service ios_b;
+    asio::io_service ios_c;
 
     azmq::socket sb(ios_b, ZMQ_ROUTER);
     sb.bind("tcp://127.0.0.1:5560");
@@ -559,11 +559,11 @@ TEST_CASE( "Loopback", "[socket]" ) {
     });
 
     for (auto i = 0u; i < ct; ++i) {
-        sc.send(boost::asio::buffer(&i, sizeof(i)));
+        sc.send(asio::buffer(&i, sizeof(i)));
     }
 
     t.join();
 
-    REQUIRE(s.ec == boost::system::error_code());
+    REQUIRE(s.ec == asio::error_code());
     REQUIRE(s.ct == ct);
 }

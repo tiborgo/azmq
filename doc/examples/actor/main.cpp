@@ -1,10 +1,10 @@
 #include <azmq/actor.hpp>
 
 #include <boost/utility/string_ref.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/signal_set.hpp>
-#include <boost/asio/deadline_timer.hpp>
+#include <asio/io_service.hpp>
+#include <asio/buffer.hpp>
+#include <asio/signal_set.hpp>
+#include <asio/deadline_timer.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <memory>
@@ -12,7 +12,6 @@
 #include <atomic>
 #include <iostream>
 
-namespace asio = boost::asio;
 namespace pt = boost::posix_time;
 
 class server_t {
@@ -24,7 +23,7 @@ public:
 
     void ping() {
         frontend_.send(asio::buffer("PING"));
-        frontend_.async_receive(asio::buffer(buf_), [this](boost::system::error_code const& ec, size_t bytes_transferred) {
+        frontend_.async_receive(asio::buffer(buf_), [this](asio::error_code const& ec, size_t bytes_transferred) {
             if (ec)
                 return;
             if (boost::string_ref(buf_.data(), bytes_transferred - 1) == "PONG")
@@ -56,7 +55,7 @@ private:
     // we schedule async receives for the backend socket here
     static void do_receive(azmq::socket & backend, std::weak_ptr<impl> pimpl) {
         if (auto p = pimpl.lock()) {
-            backend.async_receive(asio::buffer(p->buf_), [&backend, pimpl](boost::system::error_code const& ec, size_t bytes_transferred) {
+            backend.async_receive(asio::buffer(p->buf_), [&backend, pimpl](asio::error_code const& ec, size_t bytes_transferred) {
                 if (ec)
                     return; // exit on error
 
@@ -89,7 +88,7 @@ void schedule_ping(asio::deadline_timer & timer, server_t & server) {
     server.ping();
 
     timer.expires_from_now(pt::milliseconds(250));
-    timer.async_wait([&](boost::system::error_code const& ec) {
+    timer.async_wait([&](asio::error_code const& ec) {
         if (ec)
             return;
         schedule_ping(timer, server);
@@ -104,7 +103,7 @@ int main(int argc, char** argv) {
 
     // halt on SIGINT or SIGTERM
     asio::signal_set signals(ios, SIGTERM, SIGINT);
-    signals.async_wait([&](boost::system::error_code const&, int) {
+    signals.async_wait([&](asio::error_code const&, int) {
         ios.stop();
     });
 
@@ -115,7 +114,7 @@ int main(int argc, char** argv) {
 
     // run for 5 secods
     asio::deadline_timer deadline(ios, pt::seconds(5));
-    deadline.async_wait([&](boost::system::error_code const&) {
+    deadline.async_wait([&](asio::error_code const&) {
         ios.stop();
     });
 

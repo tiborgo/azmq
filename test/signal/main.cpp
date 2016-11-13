@@ -8,13 +8,13 @@
 */
 #include <azmq/signal.hpp>
 
-#include <boost/asio/io_service.hpp>
+#include <asio/io_service.hpp>
 
 #define CATCH_CONFIG_MAIN
 #include "../catch.hpp"
 
 TEST_CASE( "Send/Receive a signal", "[signal]" ) {
-    boost::asio::io_service ios;
+    asio::io_service ios;
     azmq::pair_socket sb(ios);
     azmq::pair_socket sc(ios);
 

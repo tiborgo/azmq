@@ -20,7 +20,7 @@
 #include "config/condition_variable.hpp"
 
 #include <boost/assert.hpp>
-#include <boost/asio/signal_set.hpp>
+#include <asio/signal_set.hpp>
 #include <boost/container/flat_map.hpp>
 
 #include <string>
@@ -37,7 +37,7 @@ namespace detail {
     public:
         inline static std::string get_uri(const char* pfx);
 
-        actor_service(boost::asio::io_service & ios)
+        actor_service(asio::io_service & ios)
             : azmq::detail::service_base<actor_service>(ios)
         { }
 
@@ -54,7 +54,7 @@ namespace detail {
         }
 
         template<typename T>
-        static socket make_pipe(boost::asio::io_service & ios, bool defer_start, T&& data) {
+        static socket make_pipe(asio::io_service & ios, bool defer_start, T&& data) {
             auto p = std::make_shared<model<T>>(std::forward<T>(data));
             auto res = p->peer_socket(ios);
             associate_ext(res, handler(std::move(p), defer_start));
@@ -65,8 +65,8 @@ namespace detail {
         struct concept {
             using ptr = std::shared_ptr<concept>;
 
-            boost::asio::io_service io_service_;
-            boost::asio::signal_set signals_;
+            asio::io_service io_service_;
+            asio::signal_set signals_;
             pair_socket socket_;
             thread_t thread_;
 
@@ -88,7 +88,7 @@ namespace detail {
 
             virtual ~concept() = default;
 
-            pair_socket peer_socket(boost::asio::io_service & peer) {
+            pair_socket peer_socket(asio::io_service & peer) {
                 pair_socket res(peer);
                 auto uri = socket_.endpoint();
                 BOOST_ASSERT_MSG(!uri.empty(), "uri empty");
@@ -143,7 +143,7 @@ namespace detail {
 
             static void run(ptr p) {
                 lock_type l { p->mutex_ };
-                p->signals_.async_wait([p](boost::system::error_code const&, int) {
+                p->signals_.async_wait([p](asio::error_code const&, int) {
                     p->io_service_.stop();
                 });
                 p->stopped_ = false;
@@ -179,7 +179,7 @@ namespace detail {
                 , defer_start_(defer_start)
             { }
 
-            void on_install(boost::asio::io_service&, void*) {
+            void on_install(asio::io_service&, void*) {
                 if (defer_start_) return;
                 defer_start_ = false;
                 concept::run(p_);
@@ -191,11 +191,11 @@ namespace detail {
             }
 
             template<typename Option>
-            boost::system::error_code set_option(Option const& opt,
-                                                 boost::system::error_code & ec) {
+            asio::error_code set_option(Option const& opt,
+                                                 asio::error_code & ec) {
                 switch (opt.name()) {
                 case is_alive::static_name::value :
-                    ec = make_error_code(boost::system::errc::no_protocol_option);
+                    ec = make_error_code(std::errc::no_protocol_option);
                     break;
                 case detached::static_name::value :
                     {
@@ -212,18 +212,18 @@ namespace detail {
                     }
                     break;
                 case last_error::static_name::value :
-                    ec = make_error_code(boost::system::errc::no_protocol_option);
+                    ec = make_error_code(std::errc::no_protocol_option);
                     break;
                 default:
-                    ec = make_error_code(boost::system::errc::not_supported);
+                    ec = make_error_code(std::errc::not_supported);
                     break;
                 }
                 return ec;
             }
 
             template<typename Option>
-            boost::system::error_code get_option(Option & opt,
-                                                 boost::system::error_code & ec) {
+            asio::error_code get_option(Option & opt,
+                                                 asio::error_code & ec) {
                 switch (opt.name()) {
                 case is_alive::static_name::value :
                     {
@@ -238,7 +238,7 @@ namespace detail {
                     }
                     break;
                 case start::static_name::value :
-                    ec = make_error_code(boost::system::errc::no_protocol_option);
+                    ec = make_error_code(std::errc::no_protocol_option);
                     break;
                 case last_error::static_name::value :
                     {
@@ -247,7 +247,7 @@ namespace detail {
                     }
                     break;
                 default:
-                    ec = make_error_code(boost::system::errc::not_supported);
+                    ec = make_error_code(std::errc::not_supported);
                     break;
                 }
                 return ec;

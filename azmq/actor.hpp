@@ -12,7 +12,7 @@
 #include "socket.hpp"
 #include "detail/actor_service.hpp"
 
-#include <boost/asio/io_service.hpp>
+#include <asio/io_service.hpp>
 
 #include <functional>
 
@@ -59,16 +59,16 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
      *      signals in some other way.
      */
     template<typename Function, typename... Args>
-    socket spawn(boost::asio::io_service & peer, bool defer_start, Function && f, Args&&... args) {
-        auto& t = boost::asio::use_service<detail::actor_service>(peer);
+    socket spawn(asio::io_service & peer, bool defer_start, Function && f, Args&&... args) {
+        auto& t = asio::use_service<detail::actor_service>(peer);
         return t.make_pipe(defer_start, std::bind(std::forward<Function>(f),
                                                   std::placeholders::_1,
                                                   std::forward<Args>(args)...));
     }
 
     template<typename Function, typename... Args>
-    socket spawn(boost::asio::io_service & peer, Function && f, Args&&... args) {
-        auto& t = boost::asio::use_service<detail::actor_service>(peer);
+    socket spawn(asio::io_service & peer, Function && f, Args&&... args) {
+        auto& t = asio::use_service<detail::actor_service>(peer);
         return t.make_pipe(false, std::bind(std::forward<Function>(f),
                                             std::placeholders::_1,
                                             std::forward<Args>(args)...));
