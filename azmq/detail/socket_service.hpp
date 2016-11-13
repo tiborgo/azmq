@@ -25,7 +25,6 @@
 #include "receive_op.hpp"
 
 #include <cassert>
-#include <boost/optional.hpp>
 #include <boost/intrusive/list.hpp>
 #include <asio/system_error.hpp>
 #include <boost/container/flat_map.hpp>

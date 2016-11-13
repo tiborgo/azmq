@@ -12,7 +12,6 @@
 #include "../message.hpp"
 #include "socket_ops.hpp"
 
-#include <boost/optional.hpp>
 #include <asio/io_service.hpp>
 #include <boost/intrusive/list.hpp>
 
