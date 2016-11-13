@@ -15,7 +15,6 @@
 
 #include <boost/assert.hpp>
 #include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
 #include <regex>
 #include <asio/io_service.hpp>
 #include <asio/socket_base.hpp>
@@ -128,16 +127,22 @@ namespace detail {
             int rc = -1;
             if (std::regex_match(ep, mres, simple_tcp)) {
                 if (zmq_bind(socket.get(), ep.c_str()) == 0)
-                    rc = boost::lexical_cast<uint16_t>(mres.str(1));
+                    rc = std::stoi(mres.str(1));
             } else if (std::regex_match(ep, mres, dynamic_tcp)) {
                 auto const& hostname = mres.str(1);
                 auto const& opcode = mres.str(2);
                 auto const& first_str = mres.str(4);
                 auto const& last_str = mres.str(5);
+                
+                if ((!first_str.empty() && std::stoi(first_str) > UINT16_MAX) ||
+                    (!last_str.empty() && std::stoi(last_str) > UINT16_MAX)) {
+                    throw std::bad_cast();
+                }
+                
                 auto first = first_str.empty() ? static_cast<uint16_t>(dynamic_port::first)
-                                               : boost::lexical_cast<uint16_t>(first_str);
+                                               : (uint16_t)std::stoi(first_str);
                 auto last = last_str.empty() ? static_cast<uint16_t>(dynamic_port::last)
-                                             : boost::lexical_cast<uint16_t>(last_str);
+                                             : (uint16_t)std::stoi(last_str);
                 uint16_t port = first;
                 if (opcode[0] == '!') {
                     static boost::random::mt19937 gen;
