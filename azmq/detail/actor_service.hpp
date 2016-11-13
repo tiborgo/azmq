@@ -21,7 +21,6 @@
 
 #include <cassert>
 #include <asio/signal_set.hpp>
-#include <boost/container/flat_map.hpp>
 
 #include <string>
 #include <vector>

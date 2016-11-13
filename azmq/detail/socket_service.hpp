@@ -27,7 +27,7 @@
 #include <cassert>
 #include <boost/intrusive/list.hpp>
 #include <asio/system_error.hpp>
-#include <boost/container/flat_map.hpp>
+#include <map>
 #include <mutex>
 
 #include <memory>
@@ -55,7 +55,7 @@ namespace detail {
                                         boost::intrusive::list_member_hook<>,
                                         &reactor_op::member_hook_
                                     >>;
-        using exts_type = boost::container::flat_map<std::type_index, socket_ext>;
+        using exts_type = std::map<std::type_index, socket_ext>;
         using allow_speculative = opt::boolean<static_cast<int>(opt::limits::lib_socket_min)>;
 
         enum class shutdown_type {
@@ -569,7 +569,7 @@ namespace detail {
             mutable std::mutex mutex_;
             using lock_type = std::unique_lock<std::mutex>;
             using key_type = socket_ops::native_handle_type;
-            boost::container::flat_map<key_type, weak_descriptor_ptr> map_;
+            std::map<key_type, weak_descriptor_ptr> map_;
         };
 
         struct reactor_handler {
