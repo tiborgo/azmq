@@ -25,7 +25,7 @@
 #include "receive_op.hpp"
 
 #include <cassert>
-#include <boost/intrusive/list.hpp>
+#include <list>
 #include <asio/system_error.hpp>
 #include <map>
 #include <mutex>
@@ -49,12 +49,7 @@ namespace detail {
         using flags_type = socket_ops::flags_type;
         using more_result_type = socket_ops::more_result_type;
         using context_type = context_ops::context_type;
-        using op_queue_type = boost::intrusive::list<reactor_op,
-                                    boost::intrusive::member_hook<
-                                        reactor_op,
-                                        boost::intrusive::list_member_hook<>,
-                                        &reactor_op::member_hook_
-                                    >>;
+        using op_queue_type = std::list<std::reference_wrapper<reactor_op>>;
         using exts_type = std::map<std::type_index, socket_ext>;
         using allow_speculative = opt::boolean<static_cast<int>(opt::limits::lib_socket_min)>;
 
@@ -113,10 +108,10 @@ namespace detail {
                     const int filter[max_ops] = { ZMQ_POLLIN, ZMQ_POLLOUT };
 
                     for (size_t i = 0; i != max_ops; ++i) {
-                        if ((evs & filter[i]) && op_queue_[i].front().do_perform(socket_)) {
-                            op_queue_[i].pop_front_and_dispose([&ops](reactor_op * op) {
-                                ops.push_back(*op);
-                            });
+                        if ((evs & filter[i]) && op_queue_[i].front().get().do_perform(socket_)) {
+                            auto op = op_queue_[i].front();
+                            op_queue_[i].pop_front();
+                            ops.push_back(op);
                         }
                     }
                 }
@@ -131,10 +126,10 @@ namespace detail {
             void cancel_ops(asio::error_code const& ec, op_queue_type & ops) {
                 for (size_t i = 0; i != max_ops; ++i) {
                     while (!op_queue_[i].empty()) {
-                        op_queue_[i].front().ec_ = ec;
-                        op_queue_[i].pop_front_and_dispose([&ops](reactor_op * op) {
-                            ops.push_back(*op);
-                        });
+                        op_queue_[i].front().get().ec_ = ec;
+                        auto op = op_queue_[i].front();
+                        op_queue_[i].pop_front();
+                        ops.push_back(op);
                     }
                 }
             }
@@ -502,8 +497,11 @@ namespace detail {
         static void cancel_ops(implementation_type & impl) {
             op_queue_type ops;
             impl->cancel_ops(reactor_op::canceled(), ops);
-            while (!ops.empty())
-                ops.pop_front_and_dispose(reactor_op::do_complete);
+            while (!ops.empty()) {
+                auto op = ops.front();
+                ops.pop_front();
+                reactor_op::reactor_op::do_complete(&op.get());
+            }
         }
 
         using weak_descriptor_ptr = std::weak_ptr<per_descriptor_data>;
@@ -524,8 +522,11 @@ namespace detail {
                 if (ec)
                     impl->cancel_ops(ec, ops);
             }
-            while (!ops.empty())
-                ops.pop_front_and_dispose(reactor_op::do_complete);
+            while (!ops.empty()) {
+                auto op = ops.front();
+                ops.pop_front();
+                reactor_op::reactor_op::do_complete(&op.get());
+            }
         }
 
         void check_missed_events(implementation_type & impl)
@@ -603,8 +604,11 @@ namespace detail {
                     else
                         descriptors_.unregister_descriptor(p);
                 }
-                while (!ops.empty())
-                    ops.pop_front_and_dispose(reactor_op::do_complete);
+                while (!ops.empty()) {
+                    auto op = ops.front();
+                    ops.pop_front();
+                    reactor_op::reactor_op::do_complete(&op.get());
+                }
             }
 
             static void schedule(descriptor_map & descriptors, implementation_type & impl) {
