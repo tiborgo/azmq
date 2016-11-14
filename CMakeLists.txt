@@ -31,7 +31,7 @@ endif()
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/config")
 
-find_package(Asio REQUIRED)
+find_package(Asio 1.10.8 REQUIRED)
 find_package(ZeroMQ 4.0 REQUIRED)
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
