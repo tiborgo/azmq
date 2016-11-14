@@ -19,9 +19,8 @@
 #include "config/unique_lock.hpp"
 #include "config/condition_variable.hpp"
 
-#include <boost/assert.hpp>
+#include <cassert>
 #include <asio/signal_set.hpp>
-#include <boost/container/flat_map.hpp>
 
 #include <string>
 #include <vector>
@@ -91,7 +90,7 @@ namespace detail {
             pair_socket peer_socket(asio::io_service & peer) {
                 pair_socket res(peer);
                 auto uri = socket_.endpoint();
-                BOOST_ASSERT_MSG(!uri.empty(), "uri empty");
+                assert((!uri.empty())&&("uri empty"));
                 res.connect(uri);
                 return res;
             }

@@ -12,7 +12,7 @@
 #include "../error.hpp"
 #include "../option.hpp"
 
-#include <boost/assert.hpp>
+#include <cassert>
 #include <system_error>
 #include <mutex>
 
@@ -50,7 +50,7 @@ namespace detail {
         static asio::error_code set_option(context_type & ctx,
                                                     Option const& option,
                                                     asio::error_code & ec) {
-            BOOST_ASSERT_MSG(ctx, "context must not be null");
+            assert((ctx)&&("context must not be null"));
             auto rc = zmq_ctx_set(ctx.get(), option.name(), option.value());
             if (!rc)
                 ec = make_error_code();
@@ -61,7 +61,7 @@ namespace detail {
         static asio::error_code get_option(context_type & ctx,
                                                     Option & option,
                                                     asio::error_code & ec) {
-            BOOST_ASSERT_MSG(ctx, "context must not be null");
+            assert((ctx)&&("context must not be null"));
             auto rc = zmq_ctx_get(ctx.get(), option.name());
             if (rc < 0)
                 return ec = make_error_code();

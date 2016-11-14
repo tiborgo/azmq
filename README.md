@@ -1,11 +1,10 @@
-# AZMQ Boost Asio + ZeroMQ
+# AZMQ Asio + ZeroMQ
 
 ## Welcome
-The azmq library provides Boost Asio style bindings for ZeroMQ
+The azmq library provides Asio style bindings for ZeroMQ
 
 This library is built on top of ZeroMQ's standard C interface and is
-intended to work well with C++ applications which use the Boost libraries
-in general, and Asio in particular.
+intended to work well with C++ applications which use the Asio library.
 
 The main abstraction exposed by the library is azmq::socket which
 provides an Asio style socket interface to the underlying zeromq socket
@@ -17,18 +16,11 @@ may be freely mixed with other Asio socket types (raw TCP/UDP/Serial/etc.).
 
 Building requires a recent version of CMake (2.8.12 or later for Visual Studio, 2.8 or later for the rest), and a C++ compiler
 which supports C++11. Currently this has been tested with -
-* Xcode 5.1 on OS X 10.8
-* Xcode 6 on OS X 10.9
-* Xcode 6.4 on OS X 10.10
-* Xcode 7.1 on OS X 10.11
-* GCC 4.8 on Arch Linux and Ubuntu
-* GCC 4.9 on Ubuntu
-* GCC 5.3 + Boost 1.60 on Ubuntu
-* Microsoft Visual Studio 2013 on Windows Server 2008 R2
+* Xcode 8.1 on OS X 10.11
 
 Library dependencies are -
-* Boost 1.54 or later
-* ZeroMQ 4.0.x
+* [Asio](http://think-async.com/) 1.10.8 or later
+* [ZeroMQ](http://zeromq.org/) 4.0.x
 
 To build on Linux / OS X -
 ```
@@ -51,7 +43,7 @@ You can also open Visual Studio solution from `build` directory after invoking C
 
 To change the default install location use `-DCMAKE_INSTALL_PREFIX` when invoking CMake.
 
-To change where the build looks for Boost and ZeroMQ use `-DBOOST_ROOT=<my custom Boost install>` and `-DZMQ_ROOT=<my custom ZeroMQ install>` when invoking CMake. Or set `BOOST_ROOT` and `ZMQ_ROOT` environment variables.
+To change where the build looks for Asio and ZeroMQ use `-DASIO_ROOT=<my custom Asio install>` and `-DZMQ_ROOT=<my custom ZeroMQ install>` when invoking CMake. Or set `ASIO_ROOT` and `ZMQ_ROOT` environment variables.
 
 ## Example Code
 This is an azmq version of the code presented in the ZeroMQ guide at
@@ -84,10 +76,6 @@ int main(int argc, char** argv) {
 ```
 
 Further examples may be found in doc/examples
-
-## Build status
-
-[AZMQ build status](https://136.243.151.173:4433/project.html?projectId=Azmq&guest=1)
 
 ## Copying
 

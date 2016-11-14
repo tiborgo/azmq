@@ -9,9 +9,6 @@
 #include <azmq/socket.hpp>
 #include <azmq/util/scope_guard.hpp>
 
-#include <boost/utility/string_ref.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/classification.hpp>
 #include <asio/buffer.hpp>
 
 #include <array>
@@ -60,10 +57,10 @@ TEST_CASE( "Send/Receive single buffer", "[socket]") {
     asio::io_service ios;
 
     azmq::socket sb(ios, ZMQ_PAIR);
-    sb.bind(subj(BOOST_CURRENT_FUNCTION));
+    sb.bind(subj(__func__));
 
     azmq::socket sc(ios, ZMQ_PAIR);
-    sc.connect(subj(BOOST_CURRENT_FUNCTION));
+    sc.connect(subj(__func__));
 
     auto msg = "TEST";
     auto snd_buf = asio::const_buffer(msg, 5);
@@ -73,17 +70,18 @@ TEST_CASE( "Send/Receive single buffer", "[socket]") {
     auto sz2 = sb.receive(asio::buffer(buf));
 
     REQUIRE(sz1 == sz2);
-    REQUIRE(boost::string_ref(msg) == boost::string_ref(buf.data()));
+    REQUIRE(buf.size() >= 5);
+    REQUIRE(std::memcmp(msg, buf.data(), 5) == 0);
 }
 
 TEST_CASE( "Send/Receive synchronous", "[socket]" ) {
     asio::io_service ios;
 
     azmq::socket sb(ios, ZMQ_ROUTER);
-    sb.bind(subj(BOOST_CURRENT_FUNCTION));
+    sb.bind(subj(__func__));
 
     azmq::socket sc(ios, ZMQ_DEALER);
-    sc.connect(subj(BOOST_CURRENT_FUNCTION));
+    sc.connect(subj(__func__));
 
     sc.send(snd_bufs);
 
@@ -120,10 +118,10 @@ TEST_CASE( "Send/Receive async", "[socket_ops]" ) {
     asio::io_service ios_c;
 
     azmq::socket sb(ios_b, ZMQ_ROUTER);
-    sb.bind(subj(BOOST_CURRENT_FUNCTION));
+    sb.bind(subj(__func__));
 
     azmq::socket sc(ios_c, ZMQ_DEALER);
-    sc.connect(subj(BOOST_CURRENT_FUNCTION));
+    sc.connect(subj(__func__));
 
     asio::error_code ecc;
     size_t btc = 0;
@@ -166,11 +164,11 @@ TEST_CASE( "Send/Receive async is_speculative", "[socket_ops]" ) {
 
     azmq::socket sb(ios_b, ZMQ_ROUTER);
     sb.set_option(azmq::socket::allow_speculative(true));
-    sb.bind(subj(BOOST_CURRENT_FUNCTION));
+    sb.bind(subj(__func__));
 
     azmq::socket sc(ios_c, ZMQ_DEALER);
     sc.set_option(azmq::socket::allow_speculative(true));
-    sc.connect(subj(BOOST_CURRENT_FUNCTION));
+    sc.connect(subj(__func__));
 
     asio::error_code ecc;
     size_t btc = 0;
@@ -210,11 +208,11 @@ TEST_CASE( "Send/Receive async is_speculative", "[socket_ops]" ) {
 TEST_CASE( "Send/Receive async threads", "[socket]" ) {
     asio::io_service ios_b;
     azmq::socket sb(ios_b, ZMQ_ROUTER);
-    sb.bind(subj(BOOST_CURRENT_FUNCTION));
+    sb.bind(subj(__func__));
 
     asio::io_service ios_c;
     azmq::socket sc(ios_c, ZMQ_DEALER);
-    sc.connect(subj(BOOST_CURRENT_FUNCTION));
+    sc.connect(subj(__func__));
 
     asio::error_code ecc;
     size_t btc = 0;
@@ -261,10 +259,10 @@ TEST_CASE( "Send/Receive message async", "[socket]" ) {
     asio::io_service ios_c;
 
     azmq::socket sb(ios_b, ZMQ_ROUTER);
-    sb.bind(subj(BOOST_CURRENT_FUNCTION));
+    sb.bind(subj(__func__));
 
     azmq::socket sc(ios_c, ZMQ_DEALER);
-    sc.connect(subj(BOOST_CURRENT_FUNCTION));
+    sc.connect(subj(__func__));
 
     asio::error_code ecc;
     size_t btc = 0;
@@ -317,10 +315,10 @@ TEST_CASE( "Send/Receive message more async", "[socket]" ) {
     asio::io_service ios_c;
 
     azmq::socket sb(ios_b, ZMQ_ROUTER);
-    sb.bind(subj(BOOST_CURRENT_FUNCTION));
+    sb.bind(subj(__func__));
 
     azmq::socket sc(ios_c, ZMQ_DEALER);
-    sc.connect(subj(BOOST_CURRENT_FUNCTION));
+    sc.connect(subj(__func__));
 
     asio::error_code ecc;
     size_t btc = 0;
@@ -372,7 +370,7 @@ TEST_CASE( "Send/Receive message more async", "[socket]" ) {
 
 struct monitor_handler {
 
-#if defined BOOST_MSVC
+#if defined _MSC_VER
 #pragma pack(push, 1)
     struct event_t
     {
@@ -484,13 +482,12 @@ TEST_CASE( "Socket Monitor", "[socket]" ) {
 }
 
 TEST_CASE( "Attach Method", "[socket]" ) {
-    using namespace boost::algorithm;
     asio::io_service ios;
     azmq::dealer_socket s(ios);
 
     std::vector<std::string> elems;
-
-    azmq::attach(s, split(elems, "@inproc://myendpoint,tcp://127.0.0.1:5556,inproc://others", is_any_of(",")), true);
+    
+    azmq::attach(s, std::vector<std::string>({"@inproc://myendpoint", "tcp://127.0.0.1:5556", "inproc://others"}), true);
     REQUIRE(s.endpoint() == "inproc://others");
 }
 

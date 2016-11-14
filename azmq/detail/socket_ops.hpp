@@ -13,22 +13,17 @@
 #include "../message.hpp"
 #include "context_ops.hpp"
 
-#include <boost/assert.hpp>
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
+#include <cassert>
 #include <regex>
-#include <boost/utility/string_ref.hpp>
 #include <asio/io_service.hpp>
 #include <asio/socket_base.hpp>
-#if ! defined BOOST_ASIO_WINDOWS
+#if ! defined ASIO_WINDOWS
     #include <asio/posix/stream_descriptor.hpp>
 #else
     #include <asio/ip/tcp.hpp>
 #endif
 #include <system_error>
-#include <boost/random/mersenne_twister.hpp>
-#include <boost/random/uniform_int_distribution.hpp>
-#include <boost/range/metafunctions.hpp>
+#include <random>
 
 #include <zmq.h>
 
@@ -40,6 +35,21 @@
 
 namespace azmq {
 namespace detail {
+    template <typename T>
+    class has_begin {
+    private:
+        typedef char Yes;
+        typedef Yes No[2];
+        
+        template<typename C> static auto Test(void*)
+        -> decltype(typename C::const_iterator{std::declval<C const>().begin()}, Yes{});
+        
+        template<typename> static No& Test(...);
+        
+    public:
+        static bool const value = sizeof(Test<T>(0)) == sizeof(Yes);
+    };
+    
     struct socket_ops {
         using endpoint_type = std::string;
 
@@ -47,7 +57,7 @@ namespace detail {
             void operator()(void* socket) {
                 int v = 0;
                 auto rc = zmq_setsockopt(socket, ZMQ_LINGER, &v, sizeof(int));
-                BOOST_ASSERT_MSG(rc == 0, "set linger=0 on shutdown"); (void)rc;
+                assert((rc == 0)&&("set linger=0 on shutdown")); (void)rc;
                 zmq_close(socket);
             }
         };
@@ -60,7 +70,7 @@ namespace detail {
         using raw_socket_type = void*;
         using socket_type = std::unique_ptr<void, socket_close>;
 
-#if ! defined BOOST_ASIO_WINDOWS
+#if ! defined ASIO_WINDOWS
         using posix_sd_type = asio::posix::stream_descriptor;
         using native_handle_type = asio::posix::stream_descriptor::native_handle_type;
         struct stream_descriptor_close {
@@ -80,7 +90,7 @@ namespace detail {
         static socket_type create_socket(context_ops::context_type context,
                                          int type,
                                          asio::error_code & ec) {
-            BOOST_ASSERT_MSG(context, "Invalid context");
+            assert((context)&&("Invalid context"));
             auto res = zmq_socket(context.get(), type);
             if (!res) {
                 ec = make_error_code();
@@ -92,7 +102,7 @@ namespace detail {
         static stream_descriptor get_stream_descriptor(asio::io_service & io_service,
                                                        socket_type & socket,
                                                        asio::error_code & ec) {
-            BOOST_ASSERT_MSG(socket, "invalid socket");
+            assert((socket)&&("invalid socket"));
             native_handle_type handle = 0;
             auto size = sizeof(native_handle_type);
             stream_descriptor res;
@@ -100,7 +110,7 @@ namespace detail {
             if (rc < 0)
                 ec = make_error_code();
             else {
-#if ! defined BOOST_ASIO_WINDOWS
+#if ! defined ASIO_WINDOWS
                 res.reset(new asio::posix::stream_descriptor(io_service, handle));
 #else
                 // Use duplicated SOCKET, because ASIO socket takes ownership over it so destroys one in dtor.
@@ -115,40 +125,45 @@ namespace detail {
 
         static asio::error_code cancel_stream_descriptor(stream_descriptor & sd,
                                                                   asio::error_code & ec) {
-            BOOST_ASSERT_MSG(sd, "invalid stream_descriptor");
+            assert((sd)&&("invalid stream_descriptor"));
             return sd->cancel(ec);
         }
 
         static asio::error_code bind(socket_type & socket,
                                               endpoint_type & ep,
                                               asio::error_code & ec) {
-            BOOST_ASSERT_MSG(socket, "invalid socket");
+            assert((socket)&&("invalid socket"));
             const std::regex simple_tcp("^tcp://.*:(\\d+)$");
             const std::regex dynamic_tcp("^(tcp://.*):([*!])(\\[(\\d+)?-(\\d+)?\\])?$");
             std::smatch mres;
             int rc = -1;
             if (std::regex_match(ep, mres, simple_tcp)) {
                 if (zmq_bind(socket.get(), ep.c_str()) == 0)
-                    rc = boost::lexical_cast<uint16_t>(mres.str(1));
+                    rc = std::stoi(mres.str(1));
             } else if (std::regex_match(ep, mres, dynamic_tcp)) {
                 auto const& hostname = mres.str(1);
                 auto const& opcode = mres.str(2);
                 auto const& first_str = mres.str(4);
                 auto const& last_str = mres.str(5);
+                
+                if ((!first_str.empty() && std::stoi(first_str) > UINT16_MAX) ||
+                    (!last_str.empty() && std::stoi(last_str) > UINT16_MAX)) {
+                    throw std::bad_cast();
+                }
+                
                 auto first = first_str.empty() ? static_cast<uint16_t>(dynamic_port::first)
-                                               : boost::lexical_cast<uint16_t>(first_str);
+                                               : (uint16_t)std::stoi(first_str);
                 auto last = last_str.empty() ? static_cast<uint16_t>(dynamic_port::last)
-                                             : boost::lexical_cast<uint16_t>(last_str);
+                                             : (uint16_t)std::stoi(last_str);
                 uint16_t port = first;
                 if (opcode[0] == '!') {
-                    static boost::random::mt19937 gen;
-                    boost::random::uniform_int_distribution<> port_range(port, last);
+                    static std::mt19937 gen;
+                    std::uniform_int_distribution<> port_range(port, last);
                     port = port_range(gen);
                 }
                 auto attempts = last - first;
-                auto fmt = boost::format("%s:%d");
                 while (rc < 0 && attempts--) {
-                    ep = boost::str(fmt % hostname % port);
+                    ep = hostname + ":" + std::to_string(port);
                     if (zmq_bind(socket.get(), ep.c_str()) == 0)
                         rc = port;
                     if (++port > last)
@@ -165,7 +180,7 @@ namespace detail {
         static asio::error_code unbind(socket_type & socket,
                                                 endpoint_type const& ep,
                                                 asio::error_code & ec) {
-            BOOST_ASSERT_MSG(socket, "invalid socket");
+            assert((socket)&&("invalid socket"));
             auto rc = zmq_unbind(socket.get(), ep.c_str());
             if (rc < 0)
                 ec = make_error_code();
@@ -175,7 +190,7 @@ namespace detail {
         static asio::error_code connect(socket_type & socket,
                                                  endpoint_type const& ep,
                                                  asio::error_code & ec) {
-            BOOST_ASSERT_MSG(socket, "invalid socket");
+            assert((socket)&&("invalid socket"));
             auto rc = zmq_connect(socket.get(), ep.c_str());
             if (rc < 0)
                 ec = make_error_code();
@@ -185,7 +200,7 @@ namespace detail {
         static asio::error_code disconnect(socket_type & socket,
                                                     endpoint_type const& ep,
                                                     asio::error_code & ec) {
-            BOOST_ASSERT_MSG(socket, "invalid socket");
+            assert((socket)&&("invalid socket"));
             auto rc = zmq_disconnect(socket.get(), ep.c_str());
             if (rc < 0)
                 ec = make_error_code();
@@ -206,7 +221,7 @@ namespace detail {
         static asio::error_code get_option(socket_type & socket,
                                                     Option & opt,
                                                     asio::error_code & ec) {
-            BOOST_ASSERT_MSG(socket, "invalid socket");
+            assert((socket)&&("invalid socket"));
             size_t size = opt.size();
             auto rc = zmq_getsockopt(socket.get(), opt.name(), opt.data(), &size);
             if (rc < 0)
@@ -216,7 +231,7 @@ namespace detail {
 
         static int get_events(socket_type & socket,
                               asio::error_code & ec) {
-            BOOST_ASSERT_MSG(socket, "invalid socket");
+            assert((socket)&&("invalid socket"));
             int evs = 0;
             size_t size = sizeof(evs);
             auto rc = zmq_getsockopt(socket.get(), ZMQ_EVENTS, &evs, &size);
@@ -229,7 +244,7 @@ namespace detail {
 
         static int get_socket_kind(socket_type & socket,
                                    asio::error_code & ec) {
-            BOOST_ASSERT_MSG(socket, "invalid socket");
+            assert((socket)&&("invalid socket"));
             int kind = 0;
             size_t size = sizeof(kind);
             auto rc = zmq_getsockopt(socket.get(), ZMQ_TYPE, &kind, &size);
@@ -239,7 +254,7 @@ namespace detail {
         }
 
         static bool get_socket_rcvmore(socket_type & socket) {
-            BOOST_ASSERT_MSG(socket, "invalid socket");
+            assert((socket)&&("invalid socket"));
             int more = 0;
             size_t size = sizeof(more);
             auto rc = zmq_getsockopt(socket.get(), ZMQ_RCVMORE, &more, &size);
@@ -252,7 +267,7 @@ namespace detail {
                            socket_type & socket,
                            flags_type flags,
                            asio::error_code & ec) {
-            BOOST_ASSERT_MSG(socket, "Invalid socket");
+            assert((socket)&&("Invalid socket"));
             auto rc = zmq_msg_send(const_cast<zmq_msg_t*>(&msg.msg_), socket.get(), flags);
             if (rc < 0) {
                 ec = make_error_code();
@@ -266,7 +281,7 @@ namespace detail {
                          socket_type & socket,
                          flags_type flags,
                          asio::error_code & ec) ->
-            typename boost::enable_if<boost::has_range_const_iterator<ConstBufferSequence>, size_t>::type
+            typename std::enable_if<has_begin<ConstBufferSequence>::value, size_t>::type
         {
             size_t res = 0;
             auto last = std::distance(std::begin(buffers), std::end(buffers)) - 1;
@@ -284,7 +299,7 @@ namespace detail {
                               socket_type & socket,
                               flags_type flags,
                               asio::error_code & ec) {
-            BOOST_ASSERT_MSG(socket, "Invalid socket");
+            assert((socket)&&("Invalid socket"));
             auto rc = zmq_msg_recv(const_cast<zmq_msg_t*>(&msg.msg_), socket.get(), flags);
             if (rc < 0) {
                 ec = make_error_code();
@@ -298,7 +313,7 @@ namespace detail {
                             socket_type & socket,
                             flags_type flags,
                             asio::error_code & ec) ->
-            typename boost::enable_if<boost::has_range_const_iterator<MutableBufferSequence>, size_t>::type
+            typename std::enable_if<has_begin<MutableBufferSequence>::value, size_t>::type
         {
             size_t res = 0;
             message msg;
@@ -357,7 +372,7 @@ namespace detail {
         static std::string monitor(socket_type & socket,
                                    int events,
                                    asio::error_code & ec) {
-            BOOST_ASSERT_MSG(socket, "Invalid socket");
+            assert((socket)&&("Invalid socket"));
             std::ostringstream stm;
             stm << "inproc://monitor-" << socket.get();
             auto addr = stm.str();

@@ -10,7 +10,7 @@
 #define AZMQ_DETAIL_SOCKET_EXT_HPP__
 #include "../error.hpp"
 
-#include <boost/assert.hpp>
+#include <cassert>
 #include <asio/io_service.hpp>
 
 #include <memory>
@@ -36,7 +36,7 @@ namespace detail {
         }
 
         void on_install(asio::io_service& ios, void * socket) const {
-            BOOST_ASSERT_MSG(ptr_, "reusing moved instance of socket_ext");
+            assert((ptr_)&&("reusing moved instance of socket_ext"));
             ptr_->on_install(ios, socket);
         }
 
@@ -48,13 +48,13 @@ namespace detail {
 
         template<typename Option>
         asio::error_code set_option(Option const& opt, asio::error_code & ec) const {
-            BOOST_ASSERT_MSG(ptr_, "reusing (re)moved instance of socket_ext");
+            assert((ptr_)&&("reusing (re)moved instance of socket_ext"));
             return ptr_->set_option(opt_model<Option>(const_cast<Option&>(opt)), ec);
         }
 
         template<typename Option>
         asio::error_code get_option(Option & opt, asio::error_code & ec) const {
-            BOOST_ASSERT_MSG(ptr_, "reusing (re)moved instance of socket_ext");
+            assert((ptr_)&&("reusing (re)moved instance of socket_ext"));
             return ptr_->set_option(opt_model<Option>(opt), ec);
         }
 

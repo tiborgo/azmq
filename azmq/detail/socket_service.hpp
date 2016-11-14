@@ -24,11 +24,10 @@
 #include "send_op.hpp"
 #include "receive_op.hpp"
 
-#include <boost/assert.hpp>
-#include <boost/optional.hpp>
-#include <boost/intrusive/list.hpp>
+#include <cassert>
+#include <list>
 #include <asio/system_error.hpp>
-#include <boost/container/flat_map.hpp>
+#include <map>
 #include <mutex>
 
 #include <memory>
@@ -50,13 +49,8 @@ namespace detail {
         using flags_type = socket_ops::flags_type;
         using more_result_type = socket_ops::more_result_type;
         using context_type = context_ops::context_type;
-        using op_queue_type = boost::intrusive::list<reactor_op,
-                                    boost::intrusive::member_hook<
-                                        reactor_op,
-                                        boost::intrusive::list_member_hook<>,
-                                        &reactor_op::member_hook_
-                                    >>;
-        using exts_type = boost::container::flat_map<std::type_index, socket_ext>;
+        using op_queue_type = std::list<std::reference_wrapper<reactor_op>>;
+        using exts_type = std::map<std::type_index, socket_ext>;
         using allow_speculative = opt::boolean<static_cast<int>(opt::limits::lib_socket_min)>;
 
         enum class shutdown_type {
@@ -91,7 +85,7 @@ namespace detail {
                          int type,
                          bool optimize_single_threaded,
                          asio::error_code & ec) {
-                BOOST_ASSERT_MSG(!socket_, "socket already open");
+                assert((!socket_)&&("socket already open"));
                 socket_ = socket_ops::create_socket(ctx, type, ec);
                 if (ec) return;
 
@@ -114,10 +108,10 @@ namespace detail {
                     const int filter[max_ops] = { ZMQ_POLLIN, ZMQ_POLLOUT };
 
                     for (size_t i = 0; i != max_ops; ++i) {
-                        if ((evs & filter[i]) && op_queue_[i].front().do_perform(socket_)) {
-                            op_queue_[i].pop_front_and_dispose([&ops](reactor_op * op) {
-                                ops.push_back(*op);
-                            });
+                        if ((evs & filter[i]) && op_queue_[i].front().get().do_perform(socket_)) {
+                            auto op = op_queue_[i].front();
+                            op_queue_[i].pop_front();
+                            ops.push_back(op);
                         }
                     }
                 }
@@ -132,10 +126,10 @@ namespace detail {
             void cancel_ops(asio::error_code const& ec, op_queue_type & ops) {
                 for (size_t i = 0; i != max_ops; ++i) {
                     while (!op_queue_[i].empty()) {
-                        op_queue_[i].front().ec_ = ec;
-                        op_queue_[i].pop_front_and_dispose([&ops](reactor_op * op) {
-                            ops.push_back(*op);
-                        });
+                        op_queue_[i].front().get().ec_ = ec;
+                        auto op = op_queue_[i].front();
+                        op_queue_[i].pop_front();
+                        ops.push_back(op);
                     }
                 }
             }
@@ -160,7 +154,7 @@ namespace detail {
                 auto kind = socket_ops::get_socket_kind(socket_, ec);
                 if (ec)
                     throw asio::system_error(ec);
-                BOOST_ASSERT_MSG(kind >= 0 && kind <= ZMQ_STREAM, "kind not in [ZMQ_PAIR, ZMQ_STREAM]");
+                assert((kind >= 0 && kind <= ZMQ_STREAM)&&("kind not in [ZMQ_PAIR, ZMQ_STREAM]"));
                 stm << "socket[" << kinds[kind] << "]{ ";
                 if (!endpoint_.empty())
                     stm << (serverish_ ? '@' : '>') << endpoint_ << ' ';
@@ -218,7 +212,7 @@ namespace detail {
                                           int type,
                                           bool optimize_single_threaded,
                                           asio::error_code & ec) {
-            BOOST_ASSERT_MSG(impl, "impl");
+            assert((impl)&&("impl"));
             impl->do_open(get_io_service(), ctx_, type, optimize_single_threaded, ec);
             if (ec)
                 impl.reset();
@@ -230,14 +224,14 @@ namespace detail {
         }
 
         native_handle_type native_handle(implementation_type & impl) {
-            BOOST_ASSERT_MSG(impl, "impl");
+            assert((impl)&&("impl"));
             unique_lock l{ *impl };
             return impl->socket_.get();
         }
 
         template<typename Extension>
         bool associate_ext(implementation_type & impl, Extension&& ext) {
-            BOOST_ASSERT_MSG(impl, "impl");
+            assert((impl)&&("impl"));
             unique_lock l{ *impl };
             exts_type::iterator it;
             bool res;
@@ -250,7 +244,7 @@ namespace detail {
 
         template<typename Extension>
         bool remove_ext(implementation_type & impl) {
-            BOOST_ASSERT_MSG(impl, "impl");
+            assert((impl)&&("impl"));
             unique_lock l{ *impl };
             auto it = impl->exts_.find(std::type_index(typeid(Extension)));
             if (it != std::end(impl->exts_)) {
@@ -459,7 +453,7 @@ namespace detail {
             reactor_op_ptr p{ new T(std::forward<Args>(args)...) };
             asio::error_code ec = enqueue(impl, o, p);
             if (ec) {
-                BOOST_ASSERT_MSG(p, "op ptr");
+                assert((p)&&("op ptr"));
                 p->ec_ = ec;
                 reactor_op::do_complete(p.release());
             }
@@ -503,8 +497,11 @@ namespace detail {
         static void cancel_ops(implementation_type & impl) {
             op_queue_type ops;
             impl->cancel_ops(reactor_op::canceled(), ops);
-            while (!ops.empty())
-                ops.pop_front_and_dispose(reactor_op::do_complete);
+            while (!ops.empty()) {
+                auto op = ops.front();
+                ops.pop_front();
+                reactor_op::reactor_op::do_complete(&op.get());
+            }
         }
 
         using weak_descriptor_ptr = std::weak_ptr<per_descriptor_data>;
@@ -525,8 +522,11 @@ namespace detail {
                 if (ec)
                     impl->cancel_ops(ec, ops);
             }
-            while (!ops.empty())
-                ops.pop_front_and_dispose(reactor_op::do_complete);
+            while (!ops.empty()) {
+                auto op = ops.front();
+                ops.pop_front();
+                reactor_op::reactor_op::do_complete(&op.get());
+            }
         }
 
         void check_missed_events(implementation_type & impl)
@@ -570,7 +570,7 @@ namespace detail {
             mutable std::mutex mutex_;
             using lock_type = std::unique_lock<std::mutex>;
             using key_type = socket_ops::native_handle_type;
-            boost::container::flat_map<key_type, weak_descriptor_ptr> map_;
+            std::map<key_type, weak_descriptor_ptr> map_;
         };
 
         struct reactor_handler {
@@ -604,8 +604,11 @@ namespace detail {
                     else
                         descriptors_.unregister_descriptor(p);
                 }
-                while (!ops.empty())
-                    ops.pop_front_and_dispose(reactor_op::do_complete);
+                while (!ops.empty()) {
+                    auto op = ops.front();
+                    ops.pop_front();
+                    reactor_op::reactor_op::do_complete(&op.get());
+                }
             }
 
             static void schedule(descriptor_map & descriptors, implementation_type & impl) {

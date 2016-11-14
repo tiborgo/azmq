@@ -6,6 +6,7 @@
 # ZeroMQ_FOUND - True of ZeroMQ found
 # ZeroMQ_INCLUDE_DIRS - Location of ZeroMQ includes
 # ZeroMQ_LIBRARIES - ZeroMQ libraries
+# ZeroMQ_VERSION - Version of ZeroMQ libraries
 
 include(FindPackageHandleStandardArgs)
 
@@ -36,17 +37,7 @@ if (ZeroMQ_INCLUDE_DIRS)
     _zmqver_EXTRACT("ZMQ_VERSION_MINOR" ZeroMQ_VERSION_MINOR)
     _zmqver_EXTRACT("ZMQ_VERSION_PATCH" ZeroMQ_VERSION_PATCH)
 
-    message(STATUS "ZeroMQ version: ${ZeroMQ_VERSION_MAJOR}.${ZeroMQ_VERSION_MINOR}.${ZeroMQ_VERSION_PATCH}")
-
-    # We should provide version to find_package_handle_standard_args in the same format as it was requested,
-    # otherwise it can't check whether version matches exactly.
-    if (ZeroMQ_FIND_VERSION_COUNT GREATER 2)
-        set(ZeroMQ_VERSION "${ZeroMQ_VERSION_MAJOR}.${ZeroMQ_VERSION_MINOR}.${ZeroMQ_VERSION_PATCH}")
-    else()
-        # User has requested ZeroMQ version without patch part => user is not interested in specific patch =>
-        # any patch should be an exact match.
-        set(ZeroMQ_VERSION "${ZeroMQ_VERSION_MAJOR}.${ZeroMQ_VERSION_MINOR}")
-    endif()
+    set(ZeroMQ_VERSION "${ZeroMQ_VERSION_MAJOR}.${ZeroMQ_VERSION_MINOR}.${ZeroMQ_VERSION_PATCH}")
 
     if (NOT ${CMAKE_CXX_PLATFORM_ID} STREQUAL "Windows")
         find_library(ZeroMQ_LIBRARIES NAMES zmq HINTS ${_ZeroMQ_ROOT}/lib)
@@ -78,7 +69,5 @@ find_package_handle_standard_args(ZeroMQ FOUND_VAR ZeroMQ_FOUND
     REQUIRED_VARS ZeroMQ_INCLUDE_DIRS ZeroMQ_LIBRARIES
     VERSION_VAR ZeroMQ_VERSION)
 
-if (ZeroMQ_FOUND)
-    mark_as_advanced(ZeroMQ_INCLUDE_DIRS ZeroMQ_LIBRARIES ZeroMQ_VERSION
-        ZeroMQ_VERSION_MAJOR ZeroMQ_VERSION_MINOR ZeroMQ_VERSION_PATCH)
-endif()
+set(ZeroMQ_VERSION ${ZeroMQ_VERSION} CACHE STRING "" FORCE)
+set(ZeroMQ_FOUND ${ZeroMQ_FOUND} CACHE BOOL "" FORCE)

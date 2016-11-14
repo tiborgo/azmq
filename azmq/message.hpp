@@ -12,13 +12,10 @@
 #include "error.hpp"
 #include "util/scope_guard.hpp"
 
-#include <boost/assert.hpp>
-#include <boost/utility/string_ref.hpp>
+#include <cassert>
 #include <asio/buffer.hpp>
 #include <asio/buffers_iterator.hpp>
 #include <asio/system_error.hpp>
-#include <boost/iterator/iterator_facade.hpp>
-#include <boost/range/iterator_range.hpp>
 
 #include <zmq.h>
 
@@ -38,21 +35,16 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
 
     struct nocopy_t {};
 
-#ifdef BOOST_NO_CXX11_CONSTEXPR
-    const nocopy_t nocopy = nocopy_t{};
-#else
     constexpr nocopy_t nocopy = nocopy_t{};
-#endif
-
 
     struct message {
         typedef void (free_fn) (void *data);
 
         using flags_type = int;
 
-        message() BOOST_NOEXCEPT {
+        message() noexcept {
             auto rc = zmq_msg_init(&msg_);
-            BOOST_ASSERT_MSG(rc == 0, "zmq_msg_init return non-zero"); (void)rc;
+            assert((rc == 0)&&("zmq_msg_init return non-zero")); (void)rc;
         }
 
         explicit message(size_t size) {
@@ -98,7 +90,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
 
             const auto call_deleter = [](void *buf, void *hint) {
                 std::unique_ptr<D> deleter(reinterpret_cast<D*>(hint));
-                BOOST_ASSERT_MSG(deleter, "!deleter");
+                assert((deleter)&&("!deleter"));
                 (*deleter)(buf);
             };
 
@@ -114,7 +106,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
 
         message(nocopy_t, asio::mutable_buffer const& buffer, free_fn* deleter)
         {
-            BOOST_ASSERT_MSG(deleter, "!deleter");
+            assert((deleter)&&("!deleter"));
 
             const auto call_deleter = [](void *buf, void *hint) {
                 free_fn *deleter(reinterpret_cast<free_fn*>(hint));
@@ -129,28 +121,28 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
                 throw asio::system_error(make_error_code());
         }
 
-        explicit message(boost::string_ref str)
+        explicit message(const std::string& str)
             : message(asio::buffer(str.data(), str.size()))
         { }
 
-        message(message && rhs) BOOST_NOEXCEPT
+        message(message && rhs) noexcept
             : msg_(rhs.msg_)
         {
             auto rc = zmq_msg_init(&rhs.msg_);
-            BOOST_ASSERT_MSG(rc == 0, "zmq_msg_init return non-zero"); (void)rc;
+            assert((rc == 0)&&("zmq_msg_init return non-zero")); (void)rc;
         }
 
-        message& operator=(message && rhs) BOOST_NOEXCEPT {
+        message& operator=(message && rhs) noexcept {
             msg_ = rhs.msg_;
             auto rc = zmq_msg_init(&rhs.msg_);
-            BOOST_ASSERT_MSG(rc == 0, "zmq_msg_init return non-zero"); (void)rc;
+            assert((rc == 0)&&("zmq_msg_init return non-zero")); (void)rc;
 
             return *this;
         }
 
         message(message const& rhs) {
             auto rc = zmq_msg_init(const_cast<zmq_msg_t*>(&msg_));
-            BOOST_ASSERT_MSG(rc == 0, "zmq_msg_init return non-zero");
+            assert((rc == 0)&&("zmq_msg_init return non-zero"));
             rc = zmq_msg_copy(const_cast<zmq_msg_t*>(&msg_),
                               const_cast<zmq_msg_t*>(&rhs.msg_));
             if (rc)
@@ -167,15 +159,15 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
 
         ~message() { close(); }
 
-        asio::const_buffer cbuffer() const BOOST_NOEXCEPT {
+        asio::const_buffer cbuffer() const noexcept {
             return asio::buffer(data(), size());
         }
 
-        operator asio::const_buffer() const BOOST_NOEXCEPT {
+        operator asio::const_buffer() const noexcept {
             return cbuffer();
         }
 
-        asio::const_buffer buffer() const BOOST_NOEXCEPT {
+        asio::const_buffer buffer() const noexcept {
             return cbuffer();
         }
 
@@ -195,11 +187,11 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
             return asio::buffer_copy(target, buffer());
         }
 
-        bool operator==(const message & rhs) const BOOST_NOEXCEPT {
+        bool operator==(const message & rhs) const noexcept {
             return !operator!=(rhs);
         }
 
-        bool operator!=(const message & rhs) const BOOST_NOEXCEPT {
+        bool operator!=(const message & rhs) const noexcept {
             const auto sz = size();
 
             return sz != rhs.size()
@@ -210,15 +202,15 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
             return std::string(static_cast<const char *>(data()), size());
         }
 
-        const void *data() const BOOST_NOEXCEPT {
+        const void *data() const noexcept {
             return zmq_msg_data(const_cast<zmq_msg_t*>(&msg_));
         }
 
-        size_t size() const BOOST_NOEXCEPT {
+        size_t size() const noexcept {
             return zmq_msg_size(const_cast<zmq_msg_t*>(&msg_));
         }
 
-        bool more() const BOOST_NOEXCEPT {
+        bool more() const noexcept {
             return zmq_msg_more(const_cast<zmq_msg_t*>(&msg_)) ? true : false;
         }
 
@@ -226,9 +218,9 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
         friend detail::socket_ops;
         zmq_msg_t msg_;
 
-        void close() BOOST_NOEXCEPT {
+        void close() noexcept {
             auto rc = zmq_msg_close(&msg_);
-            BOOST_ASSERT_MSG(rc == 0, "zmq_msg_close return non-zero"); (void)rc;
+            assert((rc == 0)&&("zmq_msg_close return non-zero")); (void)rc;
         }
 
         // note, this is a bit fragile, currently the last two bytes in a
@@ -238,13 +230,13 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
             type_offset = sizeof(zmq_msg_t) - 2
         };
 
-        uint8_t flags() const BOOST_NOEXCEPT {
+        uint8_t flags() const noexcept {
             auto pm = const_cast<zmq_msg_t*>(&msg_);
             auto p = reinterpret_cast<uint8_t*>(pm);
             return p[flags_offset];
         }
 
-        uint8_t type() const BOOST_NOEXCEPT {
+        uint8_t type() const noexcept {
             auto pm = const_cast<zmq_msg_t*>(&msg_);
             auto p = reinterpret_cast<uint8_t*>(pm);
             return p[type_offset];
@@ -257,7 +249,7 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
             type_cmsg = 104
         };
 
-        bool is_shared() const BOOST_NOEXCEPT {
+        bool is_shared() const noexcept {
             // TODO use shared message property if libzmq version >= 4.1
             return (flags() & flag_shared) || type() == type_cmsg;
         }
@@ -266,10 +258,10 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
             auto sz = size();
             zmq_msg_t tmp;
             auto rc = zmq_msg_init(&tmp);
-            BOOST_ASSERT_MSG(rc == 0, "zmq_msg_init return non-zero");
+            assert((rc == 0)&&("zmq_msg_init return non-zero"));
 
             rc = zmq_msg_move(&tmp, &msg_);
-            BOOST_ASSERT_MSG(rc == 0, "zmq_msg_move return non-zero");
+            assert((rc == 0)&&("zmq_msg_move return non-zero"));
 
             // ensure that tmp is always cleaned up
             SCOPE_EXIT { zmq_msg_close(&tmp); };
@@ -283,55 +275,6 @@ AZMQ_V1_INLINE_NAMESPACE_BEGIN
             ::memcpy(pdst, psrc, sz);
         }
     };
-
-    template<typename IteratorType>
-    struct const_message_iterator
-        : boost::iterator_facade<
-                    const_message_iterator<IteratorType>
-                , message const
-                , boost::forward_traversal_tag
-            >
-    {
-        const_message_iterator(IteratorType const& it)
-            : it_(it)
-        { }
-
-    private:
-        friend class boost::iterator_core_access;
-
-        IteratorType it_;
-        mutable message msg_;
-
-        void increment() { it_++; }
-        bool equal(const_message_iterator const& other) const {
-            return it_ == other.it_;
-        }
-
-        message& dereference() const {
-            msg_ = message(*it_);
-            return msg_;
-        }
-    };
-
-    template<typename BufferSequence>
-    struct deduced_const_message_range {
-        using iterator_type = const_message_iterator<typename BufferSequence::const_iterator>;
-        using range_type = boost::iterator_range<iterator_type>;
-
-        static range_type get_range(BufferSequence const& buffers) {
-            return range_type(iterator_type(std::begin(buffers)),
-                              iterator_type(std::end(buffers)));
-        }
-    };
-
-    // note, as with asio's expectations, buffers must remain valid for the lifetime of the returned
-    // range
-    template<typename ConstBufferSequence>
-    static auto const_message_range(ConstBufferSequence const& buffers) ->
-        typename deduced_const_message_range<ConstBufferSequence>::range_type
-    {
-        return deduced_const_message_range<ConstBufferSequence>::get_range(buffers);
-    }
 
     using message_vector = std::vector<message>;
 

@@ -1,18 +1,14 @@
 #include <azmq/actor.hpp>
 
-#include <boost/utility/string_ref.hpp>
 #include <asio/io_service.hpp>
 #include <asio/buffer.hpp>
 #include <asio/signal_set.hpp>
-#include <asio/deadline_timer.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <asio/system_timer.hpp>
 
 #include <memory>
 #include <array>
 #include <atomic>
 #include <iostream>
-
-namespace pt = boost::posix_time;
 
 class server_t {
 public:
@@ -26,7 +22,8 @@ public:
         frontend_.async_receive(asio::buffer(buf_), [this](asio::error_code const& ec, size_t bytes_transferred) {
             if (ec)
                 return;
-            if (boost::string_ref(buf_.data(), bytes_transferred - 1) == "PONG")
+            std::string pong("PONG");
+            if (bytes_transferred - 1 == pong.size() && std::memcmp(buf_.data(), pong.data(), pong.size()) == 0)
                 pimpl_->pongs_++;
         });
     }
@@ -60,7 +57,8 @@ private:
                     return; // exit on error
 
                 if (auto p = pimpl.lock()) {
-                    if (boost::string_ref(p->buf_.data(), bytes_transferred - 1) != "PING")
+                    std::string ping("PING");
+                    if (bytes_transferred - 1 != ping.size() || std::memcmp(p->buf_.data(), ping.data(), ping.size()) != 0)
                         return; // exit if not PING
                     p->pings_++;
                     backend.send(asio::buffer("PONG"));
@@ -84,10 +82,10 @@ private:
 
 
 // ping every 250ms
-void schedule_ping(asio::deadline_timer & timer, server_t & server) {
+void schedule_ping(asio::system_timer & timer, server_t & server) {
     server.ping();
 
-    timer.expires_from_now(pt::milliseconds(250));
+    timer.expires_from_now(std::chrono::milliseconds(250));
     timer.async_wait([&](asio::error_code const& ec) {
         if (ec)
             return;
@@ -109,11 +107,11 @@ int main(int argc, char** argv) {
 
     server_t server(ios);
 
-    asio::deadline_timer timer(ios);
+    asio::system_timer timer(ios);
     schedule_ping(timer, server);
 
     // run for 5 secods
-    asio::deadline_timer deadline(ios, pt::seconds(5));
+    asio::system_timer deadline(ios, std::chrono::seconds(5));
     deadline.async_wait([&](asio::error_code const&) {
         ios.stop();
     });

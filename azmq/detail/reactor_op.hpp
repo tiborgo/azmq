@@ -12,9 +12,7 @@
 #include "../message.hpp"
 #include "socket_ops.hpp"
 
-#include <boost/optional.hpp>
 #include <asio/io_service.hpp>
-#include <boost/intrusive/list.hpp>
 
 namespace azmq {
 namespace detail {
@@ -22,7 +20,6 @@ class reactor_op {
 public:
     using socket_type = socket_ops::socket_type;
     using flags_type = socket_ops::flags_type;
-    boost::intrusive::list_member_hook<> member_hook_;
     asio::error_code ec_;
     size_t bytes_transferred_;
 

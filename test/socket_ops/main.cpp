@@ -83,7 +83,7 @@ TEST_CASE( "Inproc Send/Receive discrete calls", "[socket_ops]" ) {
     asio::error_code ec;
     auto sb = azmq::detail::socket_ops::create_socket(ctx, ZMQ_ROUTER, ec);
     REQUIRE(ec == asio::error_code());
-    auto uri = subj(BOOST_CURRENT_FUNCTION);
+    auto uri = subj(__func__);
     azmq::detail::socket_ops::bind(sb, uri, ec);
     REQUIRE(ec == asio::error_code());
 
@@ -117,7 +117,7 @@ TEST_CASE( "Inproc Send/Receive Buffer Sequence", "[socket_ops]" ) {
     asio::error_code ec;
     auto sb = azmq::detail::socket_ops::create_socket(ctx, ZMQ_ROUTER, ec);
     REQUIRE(ec == asio::error_code());
-    auto uri = subj(BOOST_CURRENT_FUNCTION);
+    auto uri = subj(__func__);
     azmq::detail::socket_ops::bind(sb, uri, ec);
     REQUIRE(ec == asio::error_code());
 
@@ -150,7 +150,7 @@ TEST_CASE( "Inproc Send/Receive message vector", "[socket_ops]" ) {
     asio::error_code ec;
     auto sb = azmq::detail::socket_ops::create_socket(ctx, ZMQ_ROUTER, ec);
     REQUIRE(ec == asio::error_code());
-    auto uri = subj(BOOST_CURRENT_FUNCTION);
+    auto uri = subj(__func__);
     azmq::detail::socket_ops::bind(sb, uri, ec);
     REQUIRE(ec == asio::error_code());
 
@@ -173,7 +173,7 @@ TEST_CASE( "Inproc Send/Receive not enough buffers", "[socket_ops]" ) {
     asio::error_code ec;
     auto sb = azmq::detail::socket_ops::create_socket(ctx, ZMQ_ROUTER, ec);
     REQUIRE(ec == asio::error_code());
-    auto uri = subj(BOOST_CURRENT_FUNCTION);
+    auto uri = subj(__func__);
     azmq::detail::socket_ops::bind(sb, uri, ec);
     REQUIRE(ec == asio::error_code());
 

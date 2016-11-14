@@ -13,7 +13,7 @@
 #ifndef AZMQ_EXPECTED_HPP_
 #define AZMQ_EXPECTED_HPP_
 
-#include <boost/assert.hpp>
+#include <cassert>
 #include <exception>
 #include <utility>
 #include <typeinfo>
@@ -65,7 +65,7 @@ public:
         if (unchecked_)
             log_expected_unchecked(err_);
 #else
-        BOOST_ASSERT_MSG(!unchecked_, "error result not checked");
+        assert((!unchecked_)&&("error result not checked"));
 #endif
     }
 
