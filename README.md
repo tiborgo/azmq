@@ -1,4 +1,4 @@
-*(This is fork of [AZMQ Boost Asio + ZeroMQ](https://github.com/zeromq/azmq) with [Boost](http://www.boost.org/) removed.)*
+*(This is a fork of [AZMQ Boost Asio + ZeroMQ](https://github.com/zeromq/azmq) with [Boost](http://www.boost.org/) removed.)*
 
 # AZMQ Asio + ZeroMQ
 
